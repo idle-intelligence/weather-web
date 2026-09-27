@@ -1,0 +1,55 @@
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>weather-wasm headless check</title></head>
+<body>
+<pre id="out">running...</pre>
+<script type="module">
+  import init, { Stations, computeCorrections } from '/weather-wasm/pkg/weather_wasm.js';
+
+  // Leave-one-out estimate for LFPG (Paris CDG) against the saved snapshot,
+  // the same computation `weather-cli validate` did to produce
+  // data/validation.csv (k=5, radius 100 km, station excluded from its own
+  // neighbour search). Prints one line the headless check reads back.
+  const TARGET_ICAO = 'LFPG';
+  const K = 5;
+  const RADIUS_KM = 100;
+
+  async function run() {
+    await init({ module_or_path: '/weather-wasm/pkg/weather_wasm_bg.wasm' });
+
+    const [stationsText, snapshotText] = await Promise.all([
+      fetch('/data/stations.json').then((r) => r.text()),
+      fetch('/data/snapshot.json').then((r) => r.text()),
+    ]);
+    const stationRows = JSON.parse(stationsText);
+    const snapshot = JSON.parse(snapshotText);
+
+    const target = stationRows.find((r) => r[0] === TARGET_ICAO);
+    const [icao, lat, lon, elevM] = target;
+
+    const stations = new Stations(stationsText);
+    const candidates = stations.nearest(lat, lon, K + 20);
+    const neighbors = candidates
+      .filter((c) => c.icao !== icao && c.distance <= RADIUS_KM)
+      .slice(0, K);
+
+    const rows = neighbors.map((n) => ({
+      icao: n.icao,
+      distance: n.distance,
+      elevM: n.elevM,
+      obs: snapshot.observations[n.icao] ?? null,
+    }));
+
+    const corr = computeCorrections(rows, elevM, snapshot.fetched_at_millis);
+    const estimated = corr.temperature.corrected ?? corr.temperature.plain;
+
+    document.getElementById('out').textContent =
+      `icao=${icao} lat=${lat} lon=${lon} elevM=${elevM} n=${rows.length} temp_estimated=${estimated}`;
+  }
+
+  run().catch((err) => {
+    document.getElementById('out').textContent = `error: ${err}\n${err && err.stack || ''}`;
+  });
+</script>
+</body>
+</html>

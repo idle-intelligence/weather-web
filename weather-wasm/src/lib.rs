@@ -16,7 +16,13 @@ use weather::physics::station_pressure_hpa;
 use weather::stations::{haversine_km, nearest, parse_stations, Station};
 
 fn to_js<T: serde::Serialize + ?Sized>(value: &T) -> Result<JsValue, JsValue> {
-    serde_wasm_bindgen::to_value(value).map_err(|e| JsValue::from_str(&e.to_string()))
+    // Plain JS objects (icao/lat/lon/... properties, obj[icao] lookups) are
+    // easier for page authors than the Map instances serde-wasm-bindgen
+    // returns by default for Rust maps and struct-turned-Values.
+    let serializer = serde_wasm_bindgen::Serializer::json_compatible();
+    value
+        .serialize(&serializer)
+        .map_err(|e| JsValue::from_str(&e.to_string()))
 }
 
 fn from_js<T: for<'de> Deserialize<'de>>(value: JsValue) -> Result<T, JsValue> {
@@ -54,7 +60,19 @@ impl Stations {
     /// `{ icao, lat, lon, elevM, name, country, distance }`.
     pub fn nearest(&self, lat: f64, lon: f64, k: usize) -> Result<JsValue, JsValue> {
         let neighbors = nearest(&self.0, lat, lon, k);
-        to_js(&neighbors)
+        // Flatten { station: {...}, distance } to { ...station, distance },
+        // the shape the pages read (icao/lat/lon/elevM/name/country/distance).
+        let flat: Vec<serde_json::Value> = neighbors
+            .into_iter()
+            .map(|n| {
+                let mut v = serde_json::to_value(&n.station).unwrap();
+                v.as_object_mut()
+                    .unwrap()
+                    .insert("distance".to_string(), serde_json::json!(n.distance));
+                v
+            })
+            .collect();
+        to_js(&flat)
     }
 }
 
