@@ -1,4 +1,4 @@
-//! weather-wasm — a thin wasm-bindgen layer over the `weather` crate.
+//! weather-wasm: a thin wasm-bindgen layer over the `weather` crate.
 //!
 //! No network code here: fetching stations.json and the live observation
 //! sources stays in the browser (JS `fetch`); this crate only takes the
