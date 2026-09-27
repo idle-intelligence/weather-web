@@ -9,6 +9,12 @@ use std::path::Path;
 
 const EARTH_RADIUS_KM: f64 = 6371.0;
 
+/// Number of neighbours the trucs.ai page uses for its kNN estimate.
+pub const DEFAULT_K: usize = 5;
+
+/// Maximum neighbour distance (km) the trucs.ai page uses for its kNN estimate.
+pub const MAX_RADIUS_KM: f64 = 100.0;
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct Station {
     pub icao: String,
@@ -69,6 +75,31 @@ pub fn nearest(stations: &[Station], lat: f64, lon: f64, k: usize) -> Vec<Neighb
             station: s.clone(),
             distance: haversine_km(lat, lon, s.lat, s.lon),
         })
+        .collect();
+    scored.sort_by(|a, b| a.distance.partial_cmp(&b.distance).unwrap());
+    scored.truncate(k);
+    scored
+}
+
+/// Like `nearest`, but drops candidates beyond `max_radius_km` and can
+/// exclude one station by icao. Used for leave-one-out validation, where the
+/// station being estimated must not appear among its own neighbours.
+pub fn nearest_within(
+    stations: &[Station],
+    lat: f64,
+    lon: f64,
+    k: usize,
+    max_radius_km: f64,
+    exclude_icao: Option<&str>,
+) -> Vec<Neighbor> {
+    let mut scored: Vec<Neighbor> = stations
+        .iter()
+        .filter(|s| exclude_icao != Some(s.icao.as_str()))
+        .map(|s| Neighbor {
+            station: s.clone(),
+            distance: haversine_km(lat, lon, s.lat, s.lon),
+        })
+        .filter(|n| n.distance <= max_radius_km)
         .collect();
     scored.sort_by(|a, b| a.distance.partial_cmp(&b.distance).unwrap());
     scored.truncate(k);

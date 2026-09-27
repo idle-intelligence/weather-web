@@ -60,7 +60,7 @@ fn run_estimate(args: impl Iterator<Item = String>) -> Result<()> {
         .map(|s| s.parse())
         .transpose()
         .context("--k must be an integer")?
-        .unwrap_or(5);
+        .unwrap_or(weather::stations::DEFAULT_K);
     let target_elev_m: Option<f64> = flags
         .get("elev")
         .map(|s| s.parse())
