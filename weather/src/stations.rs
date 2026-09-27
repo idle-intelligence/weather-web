@@ -15,7 +15,7 @@ pub const DEFAULT_K: usize = 5;
 /// Maximum neighbour distance (km) the trucs.ai page uses for its kNN estimate.
 pub const MAX_RADIUS_KM: f64 = 100.0;
 
-#[derive(Debug, Clone, PartialEq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Station {
     pub icao: String,
@@ -67,7 +67,7 @@ pub fn haversine_km(lat1: f64, lon1: f64, lat2: f64, lon2: f64) -> f64 {
     2.0 * EARTH_RADIUS_KM * a.sqrt().asin()
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Neighbor {
     pub station: Station,

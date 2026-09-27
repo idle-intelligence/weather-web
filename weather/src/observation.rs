@@ -37,7 +37,7 @@ pub struct Observation {
 }
 
 impl Observation {
-    fn field_count(&self) -> usize {
+    pub(crate) fn field_count(&self) -> usize {
         [
             self.temp_c.is_some(),
             self.dewpoint_c.is_some(),

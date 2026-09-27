@@ -14,11 +14,24 @@ fn days_from_civil(y: i64, m: u32, d: u32) -> i64 {
     era * 146097 + doe - 719468
 }
 
-/// Parses a UTC timestamp of the form "YYYY-MM-DDTHH:MM[:SS[.fff]]Z" into
-/// epoch milliseconds. Returns None if the string does not match.
+/// Parses a timestamp of the form "YYYY-MM-DDTHH:MM[:SS[.fff]](Z|+HH:MM|-HH:MM)"
+/// into epoch milliseconds. Returns None if the string does not match.
+/// The offset form covers api.weather.gov timestamps
+/// ("2026-09-27T21:15:00+00:00"); IEM's currents.json always uses "Z".
 pub fn parse_utc_millis(s: &str) -> Option<i64> {
     let s = s.trim();
-    let s = s.strip_suffix('Z')?;
+    let (s, offset_minutes) = match s.strip_suffix('Z') {
+        Some(rest) => (rest, 0i64),
+        None => {
+            let t_pos = s.find('T')?;
+            let sign_pos = s[t_pos..].rfind(['+', '-'])? + t_pos;
+            let sign: i64 = if s.as_bytes()[sign_pos] == b'+' { 1 } else { -1 };
+            let (oh, om) = s[sign_pos + 1..].split_once(':')?;
+            let oh: i64 = oh.parse().ok()?;
+            let om: i64 = om.parse().ok()?;
+            (&s[..sign_pos], sign * (oh * 60 + om))
+        }
+    };
     let (date, time) = s.split_once('T')?;
 
     let mut date_parts = date.splitn(3, '-');
@@ -46,6 +59,7 @@ pub fn parse_utc_millis(s: &str) -> Option<i64> {
         + hour * 3_600_000
         + minute * 60_000
         + second * 1_000
-        + millis;
+        + millis
+        - offset_minutes * 60_000;
     Some(millis)
 }
