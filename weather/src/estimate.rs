@@ -135,14 +135,31 @@ pub fn estimate(
         EstimateStatus::Ok
     };
 
+    // With no fresh observation, every value field is None: a plain average
+    // computed only from stale observations must never be shown as an
+    // estimate. The per-station rows and counts are kept either way.
+    let (temperature_c, dewpoint_c, wind_speed_ms, wind_dir_deg, pressure_qnh_hpa, pressure_station_hpa) =
+        if matches!(status, EstimateStatus::Ok) {
+            (
+                corr.temperature.corrected.or(corr.temperature.plain),
+                corr.dewpoint.corrected.or(corr.dewpoint.plain),
+                corr.wind.corrected_speed.or(corr.wind.plain_scalar_speed),
+                corr.wind.corrected_dir,
+                corr.pressure.corrected_qnh.or(corr.pressure.plain),
+                corr.pressure.corrected_station,
+            )
+        } else {
+            (None, None, None, None, None, None)
+        };
+
     Estimate {
         status,
-        temperature_c: corr.temperature.corrected.or(corr.temperature.plain),
-        dewpoint_c: corr.dewpoint.corrected.or(corr.dewpoint.plain),
-        wind_speed_ms: corr.wind.corrected_speed.or(corr.wind.plain_scalar_speed),
-        wind_dir_deg: corr.wind.corrected_dir,
-        pressure_qnh_hpa: corr.pressure.corrected_qnh.or(corr.pressure.plain),
-        pressure_station_hpa: corr.pressure.corrected_station,
+        temperature_c,
+        dewpoint_c,
+        wind_speed_ms,
+        wind_dir_deg,
+        pressure_qnh_hpa,
+        pressure_station_hpa,
         stations,
         stations_used: rows.len(),
         fresh_count,

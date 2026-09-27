@@ -130,6 +130,51 @@ fn stale_observation_is_marked_stale_and_excluded_from_the_average() {
     );
 }
 
+#[test]
+fn no_fresh_observation_leaves_every_value_field_none() {
+    let stations = stations();
+    let sel = select(&stations, 50.6292, 3.0573).unwrap();
+    assert_eq!(sel.stations.len(), 5);
+
+    // All five selected stations have an observation, but every one is past
+    // the 90-minute freshness cutoff.
+    let mut all_stale: HashMap<String, Observation> = HashMap::new();
+    for (icao, values) in [
+        ("LFQQ", (14.2, 11.4, 5.6, 230.0, 1018.3)),
+        ("EBOS", (14.6, 11.8, 4.9, 220.0, 1018.6)),
+        ("LFAQ", (14.8, 11.9, 5.2, 225.0, 1018.5)),
+        ("LFAC", (13.9, 11.1, 4.5, 215.0, 1018.1)),
+        ("EHFS", (13.5, 10.8, 6.1, 240.0, 1017.9)),
+    ] {
+        let (temp_c, dewpoint_c, wind_ms, wind_dir_deg, pressure_hpa) = values;
+        all_stale.insert(
+            icao.into(),
+            fresh_obs(temp_c, dewpoint_c, wind_ms, wind_dir_deg, pressure_hpa, 150.0),
+        );
+    }
+
+    let est = estimate(&sel, &all_stale, Some(35.0), NOW_MILLIS);
+
+    assert!(matches!(est.status, EstimateStatus::NoFreshObservation));
+    assert_eq!(est.fresh_count, 0);
+    assert_eq!(est.stale_count, 5);
+    assert_eq!(est.missing_count, 0);
+    assert!(est.temperature_c.is_none());
+    assert!(est.dewpoint_c.is_none());
+    assert!(est.wind_speed_ms.is_none());
+    assert!(est.wind_dir_deg.is_none());
+    assert!(est.pressure_qnh_hpa.is_none());
+    assert!(est.pressure_station_hpa.is_none());
+
+    // The per-station rows and counts are still reported.
+    assert_eq!(est.stations.len(), 5);
+    assert_eq!(est.stations_used, 5);
+    for s in &est.stations {
+        assert!(!s.fresh);
+        assert!(s.has_observation);
+    }
+}
+
 // ---- estimate: QNH vs station pressure ----
 
 #[test]
