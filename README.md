@@ -36,6 +36,4 @@ a local copy with `--stations`.
 
 ## License
 
-Code is MIT (see LICENSE). The station list and observations keep their
-sources' own terms (IEM / Iowa State University; see the metar-stations
-dataset card).
+Code is under MIT; the station list and observations keep their sources' terms (IEM / Iowa State University; see the metar-stations dataset card).
