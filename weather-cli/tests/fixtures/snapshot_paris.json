@@ -1,0 +1,50 @@
+{
+  "fetched_at_millis": 1700000000000,
+  "observations": {
+    "LFPG": {
+      "tempC": 14.2,
+      "dewpointC": 11.4,
+      "windMs": 5.6,
+      "windDirDeg": 230,
+      "pressureHpa": 1018.3,
+      "obsTimeMillis": 1699999400000,
+      "source": "IEM"
+    },
+    "LFPO": {
+      "tempC": 14.6,
+      "dewpointC": 11.8,
+      "windMs": 4.9,
+      "windDirDeg": 220,
+      "pressureHpa": 1018.6,
+      "obsTimeMillis": 1699999100000,
+      "source": "IEM"
+    },
+    "LFPB": {
+      "tempC": 14.8,
+      "dewpointC": 11.9,
+      "windMs": 5.2,
+      "windDirDeg": 225,
+      "pressureHpa": 1018.5,
+      "obsTimeMillis": 1699998800000,
+      "source": "IEM"
+    },
+    "LFPN": {
+      "tempC": 13.9,
+      "dewpointC": 11.1,
+      "windMs": 4.5,
+      "windDirDeg": 215,
+      "pressureHpa": 1018.1,
+      "obsTimeMillis": 1699998500000,
+      "source": "IEM"
+    },
+    "LFOB": {
+      "tempC": 13.5,
+      "dewpointC": 10.8,
+      "windMs": 6.1,
+      "windDirDeg": 240,
+      "pressureHpa": 1017.9,
+      "obsTimeMillis": 1699998200000,
+      "source": "IEM"
+    }
+  }
+}
