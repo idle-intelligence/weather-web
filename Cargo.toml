@@ -1,3 +1,9 @@
 [workspace]
 resolver = "2"
-members = ["weather", "weather-cli"]
+members = ["weather", "weather-cli", "weather-wasm"]
+
+[profile.release]
+opt-level = "z"
+lto = true
+strip = true
+codegen-units = 1

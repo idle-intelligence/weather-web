@@ -1,3 +1,5 @@
 /target
 Cargo.lock
 /data/
+/weather-wasm/pkg/
+/weather-wasm/node_modules/
