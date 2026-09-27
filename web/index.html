@@ -286,9 +286,9 @@
         <p class="info">
             The estimate is a distance-weighted average of the nearest
             stations within 100 km, corrected for the target point's
-            elevation, for reducing sea-level pressure to that elevation,
-            and for wind averaged as vector components rather than speed
-            and direction separately.<br>
+            elevation, with dew point averaged as vapour pressure, wind
+            averaged as vector components, and pressure kept at sea level
+            like the stations report it.<br>
             Everything runs in your browser: station selection, weighting
             and corrections are the <code>weather</code> Rust library
             compiled to WebAssembly; only fetching the station list and the
