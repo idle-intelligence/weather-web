@@ -1,4 +1,4 @@
-//! observation.rs — normalized station observations and the IEM currents.json
+//! observation.rs: normalized station observations and the IEM currents.json
 //! parser. Port of the `fetchIem` row-parsing logic in sources.js; the
 //! network fetch itself lives in the CLI (feature `native`).
 

@@ -197,7 +197,7 @@ for (const [icao, obs] of Object.entries(fixtures.fetchIem)) {
   assertClose(parsed[icao], expected, `fetchIem.${icao}`);
 }
 
-// ---- select / estimate — matches weather/tests/select_estimate_nws.rs ----
+// ---- select / estimate: matches weather/tests/select_estimate_nws.rs ----
 
 const stationsText = readFileSync(
   path.join(__dirname, '../../data/stations.json'),

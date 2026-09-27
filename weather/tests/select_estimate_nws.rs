@@ -1,4 +1,4 @@
-//! Tests for select.rs, estimate.rs and nws.rs — the logic that moved out of
+//! Tests for select.rs, estimate.rs and nws.rs: the logic that moved out of
 //! the trucs.ai page's index.html/sources.js after TC found bugs in it that
 //! tests should have caught (station selection, the 100 km radius, the
 //! removed farther-station fallback, the 90-minute freshness cutoff, and NWS

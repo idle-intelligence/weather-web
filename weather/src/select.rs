@@ -1,4 +1,4 @@
-//! select.rs — station selection for a point estimate.
+//! select.rs: station selection for a point estimate.
 //!
 //! Port of the trucs.ai page's `nearest(lat, lon, K + 15)` /
 //! `withinRadius` / `noneWithinRadius` / `final` logic (index.html), with
@@ -15,7 +15,7 @@ use serde::{Deserialize, Serialize};
 #[serde(rename_all = "camelCase")]
 pub struct Selection {
     /// Up to DEFAULT_K nearest stations within MAX_RADIUS_KM, closest
-    /// first. Empty when none are within range — there is no fallback to
+    /// first. Empty when none are within range: there is no fallback to
     /// farther stations.
     pub stations: Vec<Neighbor>,
     /// The single nearest station overall, regardless of range. Used for

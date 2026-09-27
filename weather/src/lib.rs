@@ -1,4 +1,4 @@
-//! weather — Rust reimplementation of the trucs.ai kNN weather estimator
+//! weather: Rust reimplementation of the trucs.ai kNN weather estimator
 //! (station list, inverse-distance-weighted average, and physics
 //! corrections), so it can be run and cross-validated locally.
 

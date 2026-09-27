@@ -1,9 +1,9 @@
-//! estimate.rs — turns a station Selection plus per-station observations
+//! estimate.rs: turns a station Selection plus per-station observations
 //! into the values the trucs.ai page's result panel shows.
 //!
 //! Port of the tail of the page's `compute()` (index.html): the NWS-then-IEM
 //! merge is done by the caller (one `observations` map, already merged), and
-//! this module does the rest — per-station age/freshness accounting, the
+//! this module does the rest: per-station age/freshness accounting, the
 //! fresh/stale/missing counts previously computed inline in page JS, and the
 //! displayed values, preferring `compute_corrections`'s elevation/QNH/vector
 //! corrected values and falling back to its plain distance-weighted average
@@ -75,7 +75,7 @@ fn empty_estimate(status: EstimateStatus) -> Estimate {
 
 /// `observations`: one map from ICAO to observation, already merged
 /// NWS-first (the caller looks up NWS, then IEM, per selected station,
-/// before calling this — mirrors the page's `nwsMap.get(icao) ?? iemMap[icao]`).
+/// before calling this: mirrors the page's `nwsMap.get(icao) ?? iemMap[icao]`).
 /// `target_elev_m`: the target point's own elevation, or `None` if
 /// unavailable (Open-Meteo fetch failed).
 /// `now_millis`: epoch milliseconds, used for the MAX_AGE_MIN freshness cutoff.

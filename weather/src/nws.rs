@@ -1,4 +1,4 @@
-//! nws.rs — api.weather.gov `/stations/{id}/observations/latest` parsing.
+//! nws.rs: api.weather.gov `/stations/{id}/observations/latest` parsing.
 //! Port of `fetchNws`/`nwsId` in sources.js.
 //!
 //! Each quantity there ({ value, unitCode }) is converted from whatever unit
