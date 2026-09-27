@@ -1,4 +1,4 @@
-//! physics.rs — small numeric primitives for the elevation, vapour-pressure,
+//! physics.rs: small numeric primitives for the elevation, vapour-pressure,
 //! QNH and vector-wind corrections in corrections.rs (see that file for the
 //! method description and its source, after Nalder & Wein 1998).
 //! Port of physics.js.

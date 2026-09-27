@@ -1,4 +1,4 @@
-//! idw.rs — inverse-distance-weighted kNN regression.
+//! idw.rs: inverse-distance-weighted kNN regression.
 //! Port of idw.js. sklearn's 'distance' weighting is weight = 1/d, with the
 //! special case that if any neighbour has distance exactly 0, only that
 //! neighbour is used (weight 1) and all others get weight 0.

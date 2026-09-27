@@ -1,4 +1,4 @@
-//! corrections.rs — physics-correct averaging on top of the plain
+//! corrections.rs: physics-correct averaging on top of the plain
 //! distance-weighted average, after Nalder & Wein (1998) and standard
 //! meteorological practice. Port of corrections.js.
 //!
