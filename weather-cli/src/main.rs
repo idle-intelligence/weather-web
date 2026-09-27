@@ -4,9 +4,9 @@ use serde_json::Value;
 use std::collections::HashMap;
 use std::io::Write;
 use std::time::Duration;
-use weather::corrections::{compute_corrections, NeighborRow};
+use weather::corrections::{compute_corrections, NeighborRow, MAX_AGE_MIN};
 use weather::observation::{parse_iem_currents, Observation};
-use weather::stations::{load_stations, nearest};
+use weather::stations::{load_stations, nearest, nearest_within, DEFAULT_K, MAX_RADIUS_KM};
 
 const IEM_CURRENTS_URL: &str = "https://mesonet.agron.iastate.edu/api/1/currents.json";
 const MIN_REQUEST_GAP: Duration = Duration::from_secs(3);
@@ -17,10 +17,12 @@ fn main() -> Result<()> {
     match command.as_str() {
         "estimate" => run_estimate(args),
         "snapshot" => run_snapshot(args),
+        "validate" => run_validate(args),
         _ => {
-            eprintln!("usage: weather-cli <estimate|snapshot> [options]");
+            eprintln!("usage: weather-cli <estimate|snapshot|validate> [options]");
             eprintln!("  estimate --lat LAT --lon LON --stations PATH [--k N]");
             eprintln!("  snapshot --stations PATH --out FILE");
+            eprintln!("  validate --snapshot FILE --stations PATH --out CSV");
             std::process::exit(2);
         }
     }
@@ -241,3 +243,315 @@ fn run_snapshot(args: impl Iterator<Item = String>) -> Result<()> {
     Ok(())
 }
 
+#[derive(Debug, Clone, Copy, Default)]
+struct VarPair {
+    observed: Option<f64>,
+    estimated: Option<f64>,
+    error: Option<f64>,
+}
+
+fn pair(observed: Option<f64>, estimated: Option<f64>) -> VarPair {
+    let error = match (observed, estimated) {
+        (Some(o), Some(e)) => Some(e - o),
+        _ => None,
+    };
+    VarPair {
+        observed,
+        estimated,
+        error,
+    }
+}
+
+/// Shortest signed angular difference (deg), estimated - observed, in [-180, 180].
+fn circular_error_deg(observed: f64, estimated: f64) -> f64 {
+    let raw = (estimated - observed) % 360.0;
+    if raw < -180.0 {
+        raw + 360.0
+    } else if raw > 180.0 {
+        raw - 360.0
+    } else {
+        raw
+    }
+}
+
+fn pair_circular(observed: Option<f64>, estimated: Option<f64>) -> VarPair {
+    match (observed, estimated) {
+        (Some(o), Some(e)) => VarPair {
+            observed: Some(o),
+            estimated: Some(e),
+            error: Some(circular_error_deg(o, e)),
+        },
+        _ => VarPair {
+            observed,
+            estimated,
+            error: None,
+        },
+    }
+}
+
+struct ValidationRow {
+    icao: String,
+    lat: f64,
+    lon: f64,
+    elev_m: f64,
+    n_neighbours: usize,
+    nearest_dist_km: f64,
+    nearest_elev_diff_m: f64,
+    temp: VarPair,
+    dewpoint: VarPair,
+    pressure: VarPair,
+    wind_speed: VarPair,
+    wind_dir: VarPair,
+}
+
+fn fmt_opt(v: Option<f64>) -> String {
+    match v {
+        Some(v) => format!("{v:.4}"),
+        None => String::new(),
+    }
+}
+
+fn write_csv(path: &str, rows: &[ValidationRow]) -> Result<()> {
+    let mut file = std::fs::File::create(path).with_context(|| format!("creating {path}"))?;
+    writeln!(
+        file,
+        "icao,lat,lon,elev_m,n_neighbours,nearest_dist_km,nearest_elev_diff_m,\
+temp_observed,temp_estimated,temp_error,\
+dewpoint_observed,dewpoint_estimated,dewpoint_error,\
+pressure_observed,pressure_estimated,pressure_error,\
+wind_speed_observed,wind_speed_estimated,wind_speed_error,\
+wind_dir_observed,wind_dir_estimated,wind_dir_error"
+    )?;
+    for r in rows {
+        writeln!(
+            file,
+            "{},{:.4},{:.4},{:.1},{},{:.2},{:.1},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{}",
+            r.icao,
+            r.lat,
+            r.lon,
+            r.elev_m,
+            r.n_neighbours,
+            r.nearest_dist_km,
+            r.nearest_elev_diff_m,
+            fmt_opt(r.temp.observed),
+            fmt_opt(r.temp.estimated),
+            fmt_opt(r.temp.error),
+            fmt_opt(r.dewpoint.observed),
+            fmt_opt(r.dewpoint.estimated),
+            fmt_opt(r.dewpoint.error),
+            fmt_opt(r.pressure.observed),
+            fmt_opt(r.pressure.estimated),
+            fmt_opt(r.pressure.error),
+            fmt_opt(r.wind_speed.observed),
+            fmt_opt(r.wind_speed.estimated),
+            fmt_opt(r.wind_speed.error),
+            fmt_opt(r.wind_dir.observed),
+            fmt_opt(r.wind_dir.estimated),
+            fmt_opt(r.wind_dir.error),
+        )?;
+    }
+    Ok(())
+}
+
+struct ErrorStats {
+    count: usize,
+    mae: f64,
+    rmse: f64,
+    bias: f64,
+    median_abs: f64,
+    p90_abs: f64,
+}
+
+fn percentile(sorted_abs: &[f64], p: f64) -> f64 {
+    let n = sorted_abs.len();
+    if n == 0 {
+        return f64::NAN;
+    }
+    let idx = ((p * n as f64).ceil() as usize).saturating_sub(1).min(n - 1);
+    sorted_abs[idx]
+}
+
+fn median(sorted_abs: &[f64]) -> f64 {
+    let n = sorted_abs.len();
+    if n == 0 {
+        return f64::NAN;
+    }
+    if n % 2 == 1 {
+        sorted_abs[n / 2]
+    } else {
+        (sorted_abs[n / 2 - 1] + sorted_abs[n / 2]) / 2.0
+    }
+}
+
+fn error_stats(errors: &[f64]) -> ErrorStats {
+    let n = errors.len();
+    let mut abs_sorted: Vec<f64> = errors.iter().map(|e| e.abs()).collect();
+    abs_sorted.sort_by(|a, b| a.partial_cmp(b).unwrap());
+    let bias = errors.iter().sum::<f64>() / n as f64;
+    let mae = abs_sorted.iter().sum::<f64>() / n as f64;
+    let rmse = (errors.iter().map(|e| e * e).sum::<f64>() / n as f64).sqrt();
+    ErrorStats {
+        count: n,
+        mae,
+        rmse,
+        bias,
+        median_abs: median(&abs_sorted),
+        p90_abs: percentile(&abs_sorted, 0.90),
+    }
+}
+
+fn print_stats(label: &str, errors: &[f64]) {
+    if errors.is_empty() {
+        println!("  {label}: n=0");
+        return;
+    }
+    let s = error_stats(errors);
+    println!(
+        "  {label}: n={:<5} MAE={:>6.2}  RMSE={:>6.2}  bias={:>6.2}  median|e|={:>6.2}  p90|e|={:>6.2}",
+        s.count, s.mae, s.rmse, s.bias, s.median_abs, s.p90_abs
+    );
+}
+
+fn run_validate(args: impl Iterator<Item = String>) -> Result<()> {
+    let flags = parse_flags(args);
+    let stations_path = flags.get("stations").context("--stations is required")?;
+    let snapshot_path = flags.get("snapshot").context("--snapshot is required")?;
+    let out_path = flags.get("out").context("--out is required")?;
+
+    let stations = load_stations(stations_path)?;
+    let snapshot_text = std::fs::read_to_string(snapshot_path)
+        .with_context(|| format!("reading {snapshot_path}"))?;
+    let snapshot: Snapshot = serde_json::from_str(&snapshot_text)
+        .with_context(|| format!("parsing {snapshot_path}"))?;
+    let now_millis = snapshot.fetched_at_millis;
+
+    let mut rows_out: Vec<ValidationRow> = Vec::new();
+    let mut skipped_no_neighbour = 0usize;
+
+    for station in &stations {
+        let Some(obs) = snapshot.observations.get(&station.icao) else {
+            continue;
+        };
+        let age = match obs.obs_time_millis {
+            Some(t) => (now_millis - t) as f64 / 60000.0,
+            None => continue,
+        };
+        if age > MAX_AGE_MIN {
+            continue;
+        }
+
+        let neighbours = nearest_within(
+            &stations,
+            station.lat,
+            station.lon,
+            DEFAULT_K,
+            MAX_RADIUS_KM,
+            Some(&station.icao),
+        );
+        if neighbours.is_empty() {
+            skipped_no_neighbour += 1;
+            continue;
+        }
+
+        let rows: Vec<NeighborRow> = neighbours
+            .iter()
+            .map(|n| NeighborRow {
+                icao: n.station.icao.clone(),
+                distance: n.distance,
+                elev_m: Some(n.station.elev_m),
+                obs: snapshot.observations.get(&n.station.icao).cloned(),
+            })
+            .collect();
+        let result = compute_corrections(&rows, Some(station.elev_m), now_millis);
+
+        rows_out.push(ValidationRow {
+            icao: station.icao.clone(),
+            lat: station.lat,
+            lon: station.lon,
+            elev_m: station.elev_m,
+            n_neighbours: neighbours.len(),
+            nearest_dist_km: neighbours[0].distance,
+            nearest_elev_diff_m: (station.elev_m - neighbours[0].station.elev_m).abs(),
+            temp: pair(
+                obs.temp_c,
+                result.temperature.corrected.or(result.temperature.plain),
+            ),
+            dewpoint: pair(
+                obs.dewpoint_c,
+                result.dewpoint.corrected.or(result.dewpoint.plain),
+            ),
+            pressure: pair(
+                obs.pressure_hpa,
+                result.pressure.corrected_qnh.or(result.pressure.plain),
+            ),
+            wind_speed: pair(
+                obs.wind_ms,
+                result.wind.corrected_speed.or(result.wind.plain_scalar_speed),
+            ),
+            wind_dir: pair_circular(obs.wind_dir_deg, result.wind.corrected_dir),
+        });
+    }
+
+    write_csv(out_path, &rows_out)?;
+
+    let temp_errors: Vec<f64> = rows_out.iter().filter_map(|r| r.temp.error).collect();
+
+    println!(
+        "validated {} stations against {} candidates ({} skipped: no neighbour within {:.0} km); wrote {out_path}",
+        rows_out.len(),
+        stations.len(),
+        skipped_no_neighbour,
+        MAX_RADIUS_KM
+    );
+    println!();
+    println!("temperature error (estimated - observed, C):");
+    print_stats("overall", &temp_errors);
+
+    let dist_bins: [(&str, f64, f64); 3] = [("0-25 km", 0.0, 25.0), ("25-50 km", 25.0, 50.0), ("50-100 km", 50.0, 100.0)];
+    println!("  by nearest-neighbour distance:");
+    for (label, lo, hi) in dist_bins {
+        let errs: Vec<f64> = rows_out
+            .iter()
+            .filter(|r| r.nearest_dist_km >= lo && r.nearest_dist_km < hi)
+            .filter_map(|r| r.temp.error)
+            .collect();
+        print_stats(label, &errs);
+    }
+
+    let elev_bins: [(&str, f64, f64); 4] = [
+        ("0-100 m", 0.0, 100.0),
+        ("100-300 m", 100.0, 300.0),
+        ("300-1000 m", 300.0, 1000.0),
+        (">1000 m", 1000.0, f64::INFINITY),
+    ];
+    println!("  by |elevation difference| to nearest neighbour:");
+    for (label, lo, hi) in elev_bins {
+        let errs: Vec<f64> = rows_out
+            .iter()
+            .filter(|r| r.nearest_elev_diff_m >= lo && r.nearest_elev_diff_m < hi)
+            .filter_map(|r| r.temp.error)
+            .collect();
+        print_stats(label, &errs);
+    }
+
+    println!();
+    println!("other variables (estimated - observed), overall:");
+    print_stats(
+        "dew point (C)",
+        &rows_out.iter().filter_map(|r| r.dewpoint.error).collect::<Vec<_>>(),
+    );
+    print_stats(
+        "pressure QNH (hPa)",
+        &rows_out.iter().filter_map(|r| r.pressure.error).collect::<Vec<_>>(),
+    );
+    print_stats(
+        "wind speed (m/s)",
+        &rows_out.iter().filter_map(|r| r.wind_speed.error).collect::<Vec<_>>(),
+    );
+    print_stats(
+        "wind direction (deg)",
+        &rows_out.iter().filter_map(|r| r.wind_dir.error).collect::<Vec<_>>(),
+    );
+
+    Ok(())
+}
