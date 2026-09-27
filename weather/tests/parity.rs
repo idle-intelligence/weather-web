@@ -1,6 +1,10 @@
-//! Parity tests against fixtures generated once by running the original
-//! trucs.ai knn-weather JS modules in Node (see tools/parity/generate.mjs).
-//! Fixtures live in tests/fixtures/parity.json.
+//! Parity tests against fixtures that were generated once by running the
+//! original trucs.ai knn-weather JS modules (idw.js, physics.js,
+//! corrections.js, sources.js) in Node on the same hand-made inputs used
+//! below, before those modules were replaced by this crate. The generator
+//! script no longer exists (it depended on JS modules outside this repo);
+//! the fixtures it produced are frozen and live in tests/fixtures/parity.json.
+//! This crate is now the source of truth for the computation.
 //!
 //! Tolerance: 1e-9 relative (absolute for values near zero). Rust and V8
 //! both use IEEE-754 doubles and the arithmetic here mirrors the JS
