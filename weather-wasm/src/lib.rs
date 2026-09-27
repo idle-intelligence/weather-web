@@ -8,11 +8,15 @@
 //! against the original trucs.ai JS.
 
 use serde::Deserialize;
+use std::collections::HashMap;
 use wasm_bindgen::prelude::*;
 use weather::corrections::{compute_corrections, NeighborRow};
+use weather::estimate::{estimate as estimate_core, Estimate};
 use weather::idw::{idw as idw_core, idw_circular_deg as idw_circular_deg_core, Point};
-use weather::observation::parse_iem_currents;
+use weather::nws::{nws_station_id, parse_nws_latest};
+use weather::observation::{parse_iem_currents, Observation};
 use weather::physics::station_pressure_hpa;
+use weather::select::{select as select_core, Selection};
 use weather::stations::{haversine_km, nearest, parse_stations, Station};
 
 fn to_js<T: serde::Serialize + ?Sized>(value: &T) -> Result<JsValue, JsValue> {
@@ -73,6 +77,18 @@ impl Stations {
             })
             .collect();
         to_js(&flat)
+    }
+
+    /// Selects the station(s) an estimate at (lat, lon) should use: up to 5
+    /// nearest stations within 100 km (closest first), plus the nearest
+    /// station overall (for the "no station in range" message). Returns
+    /// `null` if no stations are loaded. There is no fallback to farther
+    /// stations when none are within range.
+    pub fn select(&self, lat: f64, lon: f64) -> Result<JsValue, JsValue> {
+        match select_core(&self.0, lat, lon) {
+            Some(selection) => to_js(&selection),
+            None => Ok(JsValue::NULL),
+        }
     }
 }
 
@@ -138,4 +154,50 @@ pub fn station_pressure_hpa_js(qnh_hpa: f64, elev_m: f64) -> f64 {
 #[wasm_bindgen(js_name = maxAgeMin)]
 pub fn max_age_min() -> f64 {
     weather::corrections::MAX_AGE_MIN
+}
+
+/// `selection`: the `{ stations, nearest }` object `Stations.select`
+/// returns. `observations`: a map from ICAO id to observation (the same
+/// shape `parseIemCurrents`/`parseNwsLatest` return), already merged
+/// NWS-first per station by the caller. `targetElevM`: the target point's
+/// elevation, or undefined/null if unavailable. `nowMillis`: epoch
+/// milliseconds (`Date.now()`).
+///
+/// Returns `{ status, temperatureC, dewpointC, windSpeedMs, windDirDeg,
+/// pressureQnhHpa, pressureStationHpa, stations, stationsUsed, freshCount,
+/// staleCount, missingCount }`, where `status` is one of
+/// `{ kind: "ok" }`, `{ kind: "noStationWithinRadius", nearestId, nearestKm }`
+/// or `{ kind: "noFreshObservation" }`.
+#[wasm_bindgen]
+pub fn estimate(
+    selection: JsValue,
+    observations: JsValue,
+    target_elev_m: Option<f64>,
+    now_millis: f64,
+) -> Result<JsValue, JsValue> {
+    let selection: Selection = from_js(selection)?;
+    let observations: HashMap<String, Observation> = from_js(observations)?;
+    let result: Estimate = estimate_core(&selection, &observations, target_elev_m, now_millis as i64);
+    to_js(&result)
+}
+
+/// Parses one api.weather.gov `/stations/{id}/observations/latest` response
+/// body (as text) into an observation: `{ tempC?, dewpointC?, windMs?,
+/// windDirDeg?, pressureHpa?, obsTimeMillis?, source }`, or `null` if it
+/// carries no usable field. Units are converted from whatever `unitCode`
+/// NWS reports (degC, km/h or m/s, Pa, …), not assumed.
+#[wasm_bindgen(js_name = parseNwsLatest)]
+pub fn parse_nws_latest_js(json_text: &str) -> Result<JsValue, JsValue> {
+    match parse_nws_latest(json_text) {
+        Some(obs) => to_js(&obs),
+        None => Ok(JsValue::NULL),
+    }
+}
+
+/// NWS station id for an ICAO id: 3-character ids (CONUS) get a "K" prefix,
+/// 4-character ids (Alaska, Hawaii, Puerto Rico, Guam, US Virgin Islands)
+/// are kept as-is.
+#[wasm_bindgen(js_name = nwsStationId)]
+pub fn nws_station_id_js(icao: &str) -> String {
+    nws_station_id(icao)
 }

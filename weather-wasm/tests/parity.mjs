@@ -197,6 +197,111 @@ for (const [icao, obs] of Object.entries(fixtures.fetchIem)) {
   assertClose(parsed[icao], expected, `fetchIem.${icao}`);
 }
 
+// ---- select / estimate — matches weather/tests/select_estimate_nws.rs ----
+
+const stationsText = readFileSync(
+  path.join(__dirname, '../../data/stations.json'),
+  'utf8',
+);
+const stations = new wasm.Stations(stationsText);
+
+// Sahara point: no station within 100 km, no fallback.
+const saharaSel = stations.select(24.2, 2.03);
+if (saharaSel.stations.length !== 0) {
+  console.error(`FAIL select.sahara: expected 0 stations within radius, got ${saharaSel.stations.length}`);
+  failures++;
+}
+if (saharaSel.nearest.station.icao !== 'DATM') {
+  console.error(`FAIL select.sahara: expected nearest DATM, got ${saharaSel.nearest.station.icao}`);
+  failures++;
+}
+const saharaEst = wasm.estimate(saharaSel, {}, null, NOW_MILLIS);
+if (saharaEst.status.kind !== 'noStationWithinRadius' || saharaEst.status.nearestId !== 'DATM') {
+  console.error(`FAIL estimate.sahara: expected noStationWithinRadius/DATM, got ${JSON.stringify(saharaEst.status)}`);
+  failures++;
+}
+
+// Lille: exactly LFQQ, EBOS, LFAQ, LFAC, EHFS, closest first.
+const lilleSel = stations.select(50.6292, 3.0573);
+const lilleIcaos = lilleSel.stations.map((s) => s.station.icao);
+assertClose(lilleIcaos, ['LFQQ', 'EBOS', 'LFAQ', 'LFAC', 'EHFS'], 'select.lille');
+
+function obsRow(tempC, dewpointC, windMs, windDirDeg, pressureHpa, minutesAgo) {
+  return {
+    tempC,
+    dewpointC,
+    windMs,
+    windDirDeg,
+    pressureHpa,
+    obsTimeMillis: NOW_MILLIS - minutesAgo * 60_000,
+    source: 'IEM',
+  };
+}
+
+const freshObs = {
+  LFQQ: obsRow(14.2, 11.4, 5.6, 230.0, 1018.3, 10),
+  EBOS: obsRow(14.6, 11.8, 4.9, 220.0, 1018.6, 15),
+  LFAQ: obsRow(14.8, 11.9, 5.2, 225.0, 1018.5, 20),
+  LFAC: obsRow(13.9, 11.1, 4.5, 215.0, 1018.1, 25),
+};
+const withStale = { ...freshObs, EHFS: obsRow(99.0, 99.0, 99.0, 99.0, 1099.0, 150) };
+
+const estWithStale = wasm.estimate(lilleSel, withStale, 35.0, NOW_MILLIS);
+const estWithoutStale = wasm.estimate(lilleSel, freshObs, 35.0, NOW_MILLIS);
+const ehfs = estWithStale.stations.find((s) => s.icao === 'EHFS');
+if (!ehfs || ehfs.fresh) {
+  console.error(`FAIL estimate.stale: expected EHFS stale, got ${JSON.stringify(ehfs)}`);
+  failures++;
+}
+assertClose(estWithStale.staleCount, 1, 'estimate.stale.staleCount');
+assertClose(estWithStale.freshCount, 4, 'estimate.stale.freshCount');
+assertClose(estWithStale.temperatureC, estWithoutStale.temperatureC, 'estimate.stale.temperatureC');
+
+// QNH vs station pressure at a 400 m target.
+const qnhs = { LFQQ: 1018.3, EBOS: 1018.6, LFAQ: 1018.5, LFAC: 1018.1, EHFS: 1018.0 };
+const qnhObs = Object.fromEntries(
+  Object.entries(qnhs).map(([icao, qnh]) => [icao, obsRow(14.0, 11.0, 5.0, 220.0, qnh, 10)]),
+);
+const qnhEst = wasm.estimate(lilleSel, qnhObs, 400.0, NOW_MILLIS);
+const meanInputQnh = Object.values(qnhs).reduce((a, b) => a + b, 0) / Object.values(qnhs).length;
+if (Math.abs(qnhEst.pressureQnhHpa - meanInputQnh) >= 1.0) {
+  console.error(`FAIL estimate.qnh: ${qnhEst.pressureQnhHpa} not near ${meanInputQnh}`);
+  failures++;
+}
+if (!(qnhEst.pressureStationHpa < qnhEst.pressureQnhHpa - 30.0)) {
+  console.error(`FAIL estimate.qnh: station pressure ${qnhEst.pressureStationHpa} not well below QNH ${qnhEst.pressureQnhHpa}`);
+  failures++;
+}
+
+// ---- parseNwsLatest / nwsStationId ----
+
+const kjfkJson = readFileSync(
+  path.join(__dirname, '../../weather/tests/fixtures/nws_kjfk.json'),
+  'utf8',
+);
+const kjfkObs = wasm.parseNwsLatest(kjfkJson);
+assertClose(kjfkObs.tempC, 17.0, 'nws.kjfk.tempC');
+assertClose(kjfkObs.dewpointC, 17.0, 'nws.kjfk.dewpointC');
+assertClose(kjfkObs.windMs, 18.504 / 3.6, 'nws.kjfk.windMs');
+assertClose(kjfkObs.windDirDeg, 40.0, 'nws.kjfk.windDirDeg');
+assertClose(kjfkObs.pressureHpa, 1005.7574, 'nws.kjfk.pressureHpa');
+assertClose(kjfkObs.obsTimeMillis, Date.parse('2026-09-27T21:15:00Z'), 'nws.kjfk.obsTimeMillis');
+
+const pancJson = readFileSync(
+  path.join(__dirname, '../../weather/tests/fixtures/nws_panc.json'),
+  'utf8',
+);
+const pancObs = wasm.parseNwsLatest(pancJson);
+assertClose(pancObs.tempC, 10.0, 'nws.panc.tempC');
+assertClose(pancObs.dewpointC, 6.0, 'nws.panc.dewpointC');
+assertClose(pancObs.windMs, null, 'nws.panc.windMs');
+assertClose(pancObs.windDirDeg, null, 'nws.panc.windDirDeg');
+assertClose(pancObs.pressureHpa, 990.8573, 'nws.panc.pressureHpa');
+
+assertClose(wasm.nwsStationId('JFK'), 'KJFK', 'nwsStationId.JFK');
+assertClose(wasm.nwsStationId('00U'), 'K00U', 'nwsStationId.00U');
+assertClose(wasm.nwsStationId('PANC'), 'PANC', 'nwsStationId.PANC');
+
 if (failures > 0) {
   console.error(`\n${failures} parity check(s) failed`);
   process.exit(1);
