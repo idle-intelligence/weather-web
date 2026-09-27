@@ -148,16 +148,48 @@ struct Snapshot {
     observations: HashMap<String, Observation>,
 }
 
+/// IEM rejects a `currents.json` GET whose query string is too long (HTTP
+/// 414) somewhere between 8,000 and 9,000 characters; this stays well under
+/// that so a full station list still fits in a handful of requests instead
+/// of one per station.
+const MAX_QUERY_CHARS: usize = 7500;
+
+/// Groups icaos into batches whose `station=...&station=...` query string
+/// stays under `MAX_QUERY_CHARS`, so `snapshot` makes a handful of IEM
+/// requests instead of one per station.
+fn chunk_icaos(icaos: &[String]) -> Vec<Vec<String>> {
+    let mut chunks = Vec::new();
+    let mut current: Vec<String> = Vec::new();
+    let mut current_len = 0usize;
+    for icao in icaos {
+        let part_len = "station=".len() + icao.len();
+        let would_be = current_len + if current.is_empty() { 0 } else { 1 } + part_len;
+        if would_be > MAX_QUERY_CHARS && !current.is_empty() {
+            chunks.push(std::mem::take(&mut current));
+            current_len = 0;
+        }
+        current_len += if current.is_empty() { 0 } else { 1 } + part_len;
+        current.push(icao.clone());
+    }
+    if !current.is_empty() {
+        chunks.push(current);
+    }
+    chunks
+}
+
 fn run_snapshot(args: impl Iterator<Item = String>) -> Result<()> {
     let flags = parse_flags(args);
     let stations_path = flags.get("stations").context("--stations is required")?;
     let out_path = flags.get("out").context("--out is required")?;
 
     let stations = load_stations(stations_path)?;
+    let icaos: Vec<String> = stations.iter().map(|s| s.icao.clone()).collect();
+    let chunks = chunk_icaos(&icaos);
+
     let mut observations = HashMap::new();
     let mut last_request = None;
 
-    for station in &stations {
+    for (i, chunk) in chunks.iter().enumerate() {
         if let Some(last) = last_request {
             let elapsed: Duration = std::time::Instant::now().duration_since(last);
             if elapsed < MIN_REQUEST_GAP {
@@ -168,21 +200,32 @@ fn run_snapshot(args: impl Iterator<Item = String>) -> Result<()> {
         let mut backoff = Duration::from_secs(5);
         loop {
             last_request = Some(std::time::Instant::now());
-            let request = ureq::get(IEM_CURRENTS_URL).query("station", &station.icao);
+            let mut request = ureq::get(IEM_CURRENTS_URL);
+            for icao in chunk {
+                request = request.query("station", icao);
+            }
             match request.call() {
                 Ok(response) => {
-                    let body: Value = response.into_json().with_context(|| {
-                        format!("parsing IEM response for {}", station.icao)
-                    })?;
-                    observations.extend(parse_iem_currents(&body));
+                    let body: Value = response
+                        .into_json()
+                        .with_context(|| format!("parsing IEM response for batch {}", i + 1))?;
+                    let obs = parse_iem_currents(&body);
+                    eprintln!(
+                        "batch {}/{}: {} stations, {} observations",
+                        i + 1,
+                        chunks.len(),
+                        chunk.len(),
+                        obs.len()
+                    );
+                    observations.extend(obs);
                     break;
                 }
                 Err(ureq::Error::Status(429, _)) => {
-                    eprintln!("429 for {}, backing off {:?}", station.icao, backoff);
+                    eprintln!("429 for batch {}, backing off {:?}", i + 1, backoff);
                     std::thread::sleep(backoff);
                     backoff *= 2;
                 }
-                Err(e) => bail!("fetching {}: {e}", station.icao),
+                Err(e) => bail!("fetching batch {}: {e}", i + 1),
             }
         }
     }
@@ -197,3 +240,4 @@ fn run_snapshot(args: impl Iterator<Item = String>) -> Result<()> {
     println!("wrote {} observations to {out_path}", snapshot.observations.len());
     Ok(())
 }
+
