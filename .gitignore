@@ -2,3 +2,5 @@
 /data/
 /weather-wasm/pkg/
 /weather-wasm/node_modules/
+/web/pkg/
+/web/data/
