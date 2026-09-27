@@ -6,10 +6,12 @@
 <script type="module">
   import init, { Stations, computeCorrections } from '/weather-wasm/pkg/weather_wasm.js';
 
-  // Leave-one-out estimate for LFPG (Paris CDG) against the saved snapshot,
-  // the same computation `weather-cli validate` did to produce
-  // data/validation.csv (k=5, radius 100 km, station excluded from its own
-  // neighbour search). Prints one line the headless check reads back.
+  // Leave-one-out estimate for LFPG (Paris CDG) against a committed subset
+  // of a saved snapshot (weather/tests/fixtures/stations_subset.json and
+  // snapshot_subset.json), the same computation `weather-cli validate` does
+  // to produce a validation CSV (k=5, radius 100 km, station excluded from
+  // its own neighbour search). Prints one line the headless check reads
+  // back.
   const TARGET_ICAO = 'LFPG';
   const K = 5;
   const RADIUS_KM = 100;
@@ -18,8 +20,8 @@
     await init({ module_or_path: '/weather-wasm/pkg/weather_wasm_bg.wasm' });
 
     const [stationsText, snapshotText] = await Promise.all([
-      fetch('/data/stations.json').then((r) => r.text()),
-      fetch('/data/snapshot.json').then((r) => r.text()),
+      fetch('/weather/tests/fixtures/stations_subset.json').then((r) => r.text()),
+      fetch('/weather/tests/fixtures/snapshot_subset.json').then((r) => r.text()),
     ]);
     const stationRows = JSON.parse(stationsText);
     const snapshot = JSON.parse(snapshotText);

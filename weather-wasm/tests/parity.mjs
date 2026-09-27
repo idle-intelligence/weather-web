@@ -200,7 +200,7 @@ for (const [icao, obs] of Object.entries(fixtures.fetchIem)) {
 // ---- select / estimate: matches weather/tests/select_estimate_nws.rs ----
 
 const stationsText = readFileSync(
-  path.join(__dirname, '../../data/stations.json'),
+  path.join(__dirname, '../../weather/tests/fixtures/stations_subset.json'),
   'utf8',
 );
 const stations = new wasm.Stations(stationsText);
