@@ -1,0 +1,691 @@
+{
+  "idw": {
+    "parisFive": {
+      "value": 13.96012810410185,
+      "terms": [
+        {
+          "value": 14.2,
+          "distance": 3.1,
+          "weight": 0.3225806451612903,
+          "weightNorm": 0.47974155928826256
+        },
+        {
+          "value": 13.8,
+          "distance": 7.4,
+          "weight": 0.13513513513513511,
+          "weightNorm": 0.20097281537751535
+        },
+        {
+          "value": 14.5,
+          "distance": 9,
+          "weight": 0.1111111111111111,
+          "weightNorm": 0.1652443148659571
+        },
+        {
+          "value": 13.1,
+          "distance": 12.6,
+          "weight": 0.07936507936507936,
+          "weightNorm": 0.11803165347568363
+        },
+        {
+          "value": 12,
+          "distance": 41.3,
+          "weight": 0.02421307506053269,
+          "weightNorm": 0.036009656992581456
+        }
+      ]
+    },
+    "zeroDistance": {
+      "value": 20,
+      "terms": [
+        {
+          "value": 20,
+          "distance": 0,
+          "weight": 1,
+          "weightNorm": 1
+        },
+        {
+          "value": 10,
+          "distance": 5,
+          "weight": 0,
+          "weightNorm": 0
+        },
+        {
+          "value": 5,
+          "distance": 12,
+          "weight": 0,
+          "weightNorm": 0
+        }
+      ]
+    },
+    "empty": null
+  },
+  "idwCircularDeg": {
+    "parisFive": {
+      "value": 262.13457883130025,
+      "terms": [
+        {
+          "value": 250,
+          "distance": 3.1,
+          "weight": 0.3225806451612903,
+          "weightNorm": 0.47974155928826256
+        },
+        {
+          "value": 260,
+          "distance": 7.4,
+          "weight": 0.13513513513513511,
+          "weightNorm": 0.20097281537751535
+        },
+        {
+          "value": 10,
+          "distance": 9,
+          "weight": 0.1111111111111111,
+          "weightNorm": 0.1652443148659571
+        },
+        {
+          "value": 240,
+          "distance": 12.6,
+          "weight": 0.07936507936507936,
+          "weightNorm": 0.11803165347568363
+        },
+        {
+          "value": 255,
+          "distance": 41.3,
+          "weight": 0.02421307506053269,
+          "weightNorm": 0.036009656992581456
+        }
+      ]
+    },
+    "zeroDistance": {
+      "value": 90,
+      "terms": [
+        {
+          "value": 90,
+          "distance": 0,
+          "weight": 1,
+          "weightNorm": 1
+        },
+        {
+          "value": 270,
+          "distance": 5,
+          "weight": 0,
+          "weightNorm": 0
+        }
+      ]
+    }
+  },
+  "physics": {
+    "leastSquaresSlope": -0.00794580739655803,
+    "fitLapseRateNormal": {
+      "lapseKPerKm": -8.00563852626314,
+      "fallback": false
+    },
+    "fitLapseRateTooFew": {
+      "lapseKPerKm": -6.5,
+      "fallback": true,
+      "reason": "only 2 station(s) with elevation and temperature (need >=3)"
+    },
+    "fitLapseRateImplausible": {
+      "lapseKPerKm": -6.5,
+      "fallback": true,
+      "reason": "fitted lapse rate -500.0 K/km is implausible (>15 K/km)",
+      "fitted": -500
+    },
+    "reduceTempToElevation": 1.9474999999999998,
+    "vaporPressureHpa": 13.456432680175864,
+    "dewpointFromVaporPressureHpa": 11.399999999999999,
+    "stationPressureHpa": 798.549830509572,
+    "windComponents": {
+      "u": 4.289848881466276,
+      "v": 3.5996106142446207
+    },
+    "windFromComponentsRoundTrip": {
+      "speed": 5.6,
+      "dir": 230
+    },
+    "stdDev": 0.8930845424706442,
+    "stdDevEmpty": null,
+    "idwAverage": 14.16357288828338
+  },
+  "correctionsParisFive": {
+    "targetElevM": 35,
+    "lapse": {
+      "lapseKPerKm": -9.19077261076529,
+      "fallback": false
+    },
+    "temperature": {
+      "plain": 14.41240811652697,
+      "corrected": 15.028487134465633,
+      "points": [
+        {
+          "icao": "LFPG",
+          "distance": 12.9,
+          "elevM": 119,
+          "value": 14.2,
+          "age": 10,
+          "included": true,
+          "correctedValue": 14.972024899304284
+        },
+        {
+          "icao": "LFPO",
+          "distance": 8.1,
+          "elevM": 89,
+          "value": 14.6,
+          "age": 15,
+          "included": true,
+          "correctedValue": 15.096301720981325
+        },
+        {
+          "icao": "LFPB",
+          "distance": 9.7,
+          "elevM": 65,
+          "value": 14.8,
+          "age": 20,
+          "included": true,
+          "correctedValue": 15.07572317832296
+        },
+        {
+          "icao": "LFPN",
+          "distance": 15.4,
+          "elevM": 164,
+          "value": 13.9,
+          "age": 25,
+          "included": true,
+          "correctedValue": 15.085609666788724
+        },
+        {
+          "icao": "LFOB",
+          "distance": 68.2,
+          "elevM": 108,
+          "value": 13.5,
+          "age": 30,
+          "included": true,
+          "correctedValue": 14.170926400585866
+        }
+      ],
+      "lapse": {
+        "lapseKPerKm": -9.19077261076529,
+        "fallback": false
+      },
+      "spread": 0.4690415759823431,
+      "nearestDist": 8.1,
+      "elevSpread": 99,
+      "maxAge": 30,
+      "excluded": 0
+    },
+    "dewpoint": {
+      "plain": 11.58935946267746,
+      "corrected": 11.592597271999367,
+      "points": [
+        {
+          "icao": "LFPG",
+          "distance": 12.9,
+          "value": 11.4,
+          "age": 10,
+          "included": true,
+          "e": 13.456432680175864
+        },
+        {
+          "icao": "LFPO",
+          "distance": 8.1,
+          "value": 11.8,
+          "age": 15,
+          "included": true,
+          "e": 13.81654508334226
+        },
+        {
+          "icao": "LFPB",
+          "distance": 9.7,
+          "value": 11.9,
+          "age": 20,
+          "included": true,
+          "e": 13.907888985949295
+        },
+        {
+          "icao": "LFPN",
+          "distance": 15.4,
+          "value": 11.1,
+          "age": 25,
+          "included": true,
+          "e": 13.19180188178848
+        },
+        {
+          "icao": "LFOB",
+          "distance": 68.2,
+          "value": 10.8,
+          "age": 30,
+          "included": true,
+          "e": 12.931768315603652
+        }
+      ],
+      "spread": 0.4147288270665545,
+      "nearestDist": 8.1,
+      "maxAge": 30,
+      "excluded": 0
+    },
+    "pressure": {
+      "plain": 1018.4011384895424,
+      "correctedQnh": 1018.4011384895424,
+      "correctedStation": 1014.182960507587,
+      "points": [
+        {
+          "icao": "LFPG",
+          "distance": 12.9,
+          "value": 1018.3,
+          "age": 10,
+          "included": true
+        },
+        {
+          "icao": "LFPO",
+          "distance": 8.1,
+          "value": 1018.6,
+          "age": 15,
+          "included": true
+        },
+        {
+          "icao": "LFPB",
+          "distance": 9.7,
+          "value": 1018.5,
+          "age": 20,
+          "included": true
+        },
+        {
+          "icao": "LFPN",
+          "distance": 15.4,
+          "value": 1018.1,
+          "age": 25,
+          "included": true
+        },
+        {
+          "icao": "LFOB",
+          "distance": 68.2,
+          "value": 1017.9,
+          "age": 30,
+          "included": true
+        }
+      ],
+      "spread": 0.25612496949732244,
+      "nearestDist": 8.1,
+      "maxAge": 30,
+      "excluded": 0
+    },
+    "wind": {
+      "plainScalarSpeed": 5.100206762458138,
+      "correctedSpeed": 5.071595743981682,
+      "correctedDir": 223.74902287742233,
+      "points": [
+        {
+          "icao": "LFPG",
+          "distance": 12.9,
+          "speed": 5.6,
+          "dir": 230,
+          "age": 10,
+          "included": true
+        },
+        {
+          "icao": "LFPO",
+          "distance": 8.1,
+          "speed": 4.9,
+          "dir": 220,
+          "age": 15,
+          "included": true
+        },
+        {
+          "icao": "LFPB",
+          "distance": 9.7,
+          "speed": 5.2,
+          "dir": 225,
+          "age": 20,
+          "included": true
+        },
+        {
+          "icao": "LFPN",
+          "distance": 15.4,
+          "speed": 4.5,
+          "dir": 215,
+          "age": 25,
+          "included": true
+        },
+        {
+          "icao": "LFOB",
+          "distance": 68.2,
+          "speed": 6.1,
+          "dir": 240,
+          "age": 30,
+          "included": true
+        }
+      ],
+      "spread": 0.5535341001239217,
+      "nearestDist": 8.1,
+      "maxAge": 30,
+      "excluded": 0
+    }
+  },
+  "correctionsMountain": {
+    "targetElevM": 2004,
+    "lapse": {
+      "lapseKPerKm": -8.00563852626314,
+      "fallback": false
+    },
+    "temperature": {
+      "plain": 4.2,
+      "corrected": 4.2,
+      "points": [
+        {
+          "icao": "LFLB",
+          "distance": 24.5,
+          "elevM": 235,
+          "value": 18.4,
+          "age": 5,
+          "included": true,
+          "correctedValue": 4.238025447040501
+        },
+        {
+          "icao": "LFLS",
+          "distance": 38.1,
+          "elevM": 384,
+          "value": 17.1,
+          "age": 5,
+          "included": true,
+          "correctedValue": 4.130865587453712
+        },
+        {
+          "icao": "LFLL",
+          "distance": 71.3,
+          "elevM": 821,
+          "value": 13.9,
+          "age": 5,
+          "included": true,
+          "correctedValue": 4.429329623430704
+        },
+        {
+          "icao": "LFLJ",
+          "distance": 0,
+          "elevM": 2004,
+          "value": 4.2,
+          "age": 5,
+          "included": true,
+          "correctedValue": 4.2
+        }
+      ],
+      "lapse": {
+        "lapseKPerKm": -8.00563852626314,
+        "fallback": false
+      },
+      "spread": 5.558327086453261,
+      "nearestDist": 0,
+      "elevSpread": 1769,
+      "maxAge": 5,
+      "excluded": 0
+    },
+    "dewpoint": {
+      "plain": -1.5,
+      "corrected": -1.5000000000000016,
+      "points": [
+        {
+          "icao": "LFLB",
+          "distance": 24.5,
+          "value": 12,
+          "age": 5,
+          "included": true,
+          "e": 13.999764461538339
+        },
+        {
+          "icao": "LFLS",
+          "distance": 38.1,
+          "value": 11.5,
+          "age": 5,
+          "included": true,
+          "e": 13.54567652556463
+        },
+        {
+          "icao": "LFLL",
+          "distance": 71.3,
+          "value": 9.2,
+          "age": 5,
+          "included": true,
+          "e": 11.619771402840357
+        },
+        {
+          "icao": "LFLJ",
+          "distance": 0,
+          "value": -1.5,
+          "age": 5,
+          "included": true,
+          "e": 5.478697617563051
+        }
+      ],
+      "spread": 5.472202481633881,
+      "nearestDist": 0,
+      "maxAge": 5,
+      "excluded": 0
+    },
+    "pressure": {
+      "plain": 1011,
+      "correctedQnh": 1011,
+      "correctedStation": 792.8251778897941,
+      "points": [
+        {
+          "icao": "LFLB",
+          "distance": 24.5,
+          "value": 1015.2,
+          "age": 5,
+          "included": true
+        },
+        {
+          "icao": "LFLS",
+          "distance": 38.1,
+          "value": 1014.8,
+          "age": 5,
+          "included": true
+        },
+        {
+          "icao": "LFLL",
+          "distance": 71.3,
+          "value": 1013.9,
+          "age": 5,
+          "included": true
+        },
+        {
+          "icao": "LFLJ",
+          "distance": 0,
+          "value": 1011,
+          "age": 5,
+          "included": true
+        }
+      ],
+      "spread": 1.6422164899915015,
+      "nearestDist": 0,
+      "maxAge": 5,
+      "excluded": 0
+    },
+    "wind": {
+      "plainScalarSpeed": 6.7,
+      "correctedSpeed": 6.7,
+      "correctedDir": 300,
+      "points": [
+        {
+          "icao": "LFLB",
+          "distance": 24.5,
+          "speed": 2.1,
+          "dir": 180,
+          "age": 5,
+          "included": true
+        },
+        {
+          "icao": "LFLS",
+          "distance": 38.1,
+          "speed": 1.8,
+          "dir": 190,
+          "age": 5,
+          "included": true
+        },
+        {
+          "icao": "LFLL",
+          "distance": 71.3,
+          "speed": 3.4,
+          "dir": 160,
+          "age": 5,
+          "included": true
+        },
+        {
+          "icao": "LFLJ",
+          "distance": 0,
+          "speed": 6.7,
+          "dir": 300,
+          "age": 5,
+          "included": true
+        }
+      ],
+      "spread": 1.942935922772545,
+      "nearestDist": 0,
+      "maxAge": 5,
+      "excluded": 0
+    }
+  },
+  "correctionsStale": {
+    "targetElevM": 35,
+    "lapse": {
+      "lapseKPerKm": -6.5,
+      "fallback": true,
+      "reason": "only 1 station(s) with elevation and temperature (need >=3)"
+    },
+    "temperature": {
+      "plain": 14.445714285714285,
+      "corrected": 14.745999999999999,
+      "points": [
+        {
+          "icao": "LFPG",
+          "distance": 12.9,
+          "elevM": 119,
+          "value": 14.2,
+          "age": 10,
+          "included": true,
+          "correctedValue": 14.745999999999999
+        },
+        {
+          "icao": "LFPO",
+          "distance": 8.1,
+          "elevM": 89,
+          "value": 14.6,
+          "age": 150,
+          "included": false,
+          "correctedValue": null
+        }
+      ],
+      "lapse": {
+        "lapseKPerKm": -6.5,
+        "fallback": true,
+        "reason": "only 1 station(s) with elevation and temperature (need >=3)"
+      },
+      "spread": 0.20000000000000018,
+      "nearestDist": 8.1,
+      "elevSpread": 0,
+      "maxAge": 150,
+      "excluded": 1
+    },
+    "dewpoint": {
+      "plain": 11.645714285714284,
+      "corrected": 11.399999999999997,
+      "points": [
+        {
+          "icao": "LFPG",
+          "distance": 12.9,
+          "value": 11.4,
+          "age": 10,
+          "included": true,
+          "e": 13.456432680175864
+        },
+        {
+          "icao": "LFPO",
+          "distance": 8.1,
+          "value": 11.8,
+          "age": 150,
+          "included": false,
+          "e": 13.81654508334226
+        }
+      ],
+      "spread": 0.20000000000000018,
+      "nearestDist": 8.1,
+      "maxAge": 150,
+      "excluded": 1
+    },
+    "pressure": {
+      "plain": 1018.4842857142856,
+      "correctedQnh": 1018.3000000000001,
+      "correctedStation": 1014.0822409297423,
+      "points": [
+        {
+          "icao": "LFPG",
+          "distance": 12.9,
+          "value": 1018.3,
+          "age": 10,
+          "included": true
+        },
+        {
+          "icao": "LFPO",
+          "distance": 8.1,
+          "value": 1018.6,
+          "age": 150,
+          "included": false
+        }
+      ],
+      "spread": 0.1500000000000341,
+      "nearestDist": 8.1,
+      "maxAge": 150,
+      "excluded": 1
+    },
+    "wind": {
+      "plainScalarSpeed": 5.17,
+      "correctedSpeed": 5.6,
+      "correctedDir": 230,
+      "points": [
+        {
+          "icao": "LFPG",
+          "distance": 12.9,
+          "speed": 5.6,
+          "dir": 230,
+          "age": 10,
+          "included": true
+        },
+        {
+          "icao": "LFPO",
+          "distance": 8.1,
+          "speed": 4.9,
+          "dir": 220,
+          "age": 150,
+          "included": false
+        }
+      ],
+      "spread": 0.34999999999999964,
+      "nearestDist": 8.1,
+      "maxAge": 150,
+      "excluded": 1
+    }
+  },
+  "maxAgeMin": 90,
+  "fetchIem": {
+    "LFPG": {
+      "tempC": 14.222222222222221,
+      "dewpointC": 11.38888888888889,
+      "windMs": 5.6074396,
+      "windDirDeg": 230,
+      "pressureHpa": 1018.2874730000001,
+      "obsTime": "2026-09-27T11:50:00.000Z",
+      "source": "IEM"
+    },
+    "LFPO": {
+      "tempC": 14.61111111111111,
+      "dewpointC": 11.777777777777779,
+      "windMs": 4.887218,
+      "windDirDeg": 220,
+      "pressureHpa": 1018.6,
+      "obsTime": "2026-09-27T11:45:00.000Z",
+      "source": "IEM"
+    },
+    "XXXX": {
+      "obsTime": "2026-09-27T11:45:00.000Z",
+      "source": "IEM"
+    }
+  }
+}
