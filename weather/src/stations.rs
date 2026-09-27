@@ -4,7 +4,7 @@
 //! since the station list is small enough for that to be plenty fast.
 
 use anyhow::{Context, Result};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::path::Path;
 
 const EARTH_RADIUS_KM: f64 = 6371.0;
@@ -15,7 +15,8 @@ pub const DEFAULT_K: usize = 5;
 /// Maximum neighbour distance (km) the trucs.ai page uses for its kNN estimate.
 pub const MAX_RADIUS_KM: f64 = 100.0;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Station {
     pub icao: String,
     pub lat: f64,
@@ -42,14 +43,19 @@ impl From<StationRow> for Station {
     }
 }
 
+/// Parses a stations.json body: a JSON array of [icao, lat, lon, elev_m, name, country] rows.
+pub fn parse_stations(text: &str) -> Result<Vec<Station>> {
+    let rows: Vec<StationRow> =
+        serde_json::from_str(text).context("parsing stations JSON")?;
+    Ok(rows.into_iter().map(Station::from).collect())
+}
+
 /// Loads a stations.json file: a JSON array of [icao, lat, lon, elev_m, name, country] rows.
 pub fn load_stations(path: impl AsRef<Path>) -> Result<Vec<Station>> {
     let path = path.as_ref();
     let text = std::fs::read_to_string(path)
         .with_context(|| format!("reading stations file {}", path.display()))?;
-    let rows: Vec<StationRow> = serde_json::from_str(&text)
-        .with_context(|| format!("parsing stations file {}", path.display()))?;
-    Ok(rows.into_iter().map(Station::from).collect())
+    parse_stations(&text).with_context(|| format!("parsing stations file {}", path.display()))
 }
 
 pub fn haversine_km(lat1: f64, lon1: f64, lat2: f64, lon2: f64) -> f64 {
@@ -61,7 +67,8 @@ pub fn haversine_km(lat1: f64, lon1: f64, lat2: f64, lon2: f64) -> f64 {
     2.0 * EARTH_RADIUS_KM * a.sqrt().asin()
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Neighbor {
     pub station: Station,
     pub distance: f64,

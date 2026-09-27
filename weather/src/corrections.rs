@@ -21,11 +21,12 @@ use crate::physics::{
     reduce_temp_to_elevation, station_pressure_hpa, std_dev, vapor_pressure_hpa,
     wind_components, wind_from_components, LapseFit,
 };
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 pub const MAX_AGE_MIN: f64 = 90.0;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct NeighborRow {
     pub icao: String,
     pub distance: f64,

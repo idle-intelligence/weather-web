@@ -3,7 +3,7 @@
 //! special case that if any neighbour has distance exactly 0, only that
 //! neighbour is used (weight 1) and all others get weight 0.
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, serde::Deserialize)]
 pub struct Point {
     pub value: f64,
     pub distance: f64,

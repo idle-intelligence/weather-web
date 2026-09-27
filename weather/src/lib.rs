@@ -13,6 +13,6 @@ pub use corrections::{compute_corrections, Corrections, NeighborRow, MAX_AGE_MIN
 pub use idw::{idw, idw_circular_deg, IdwResult};
 pub use observation::{parse_iem_currents, Observation};
 pub use stations::{
-    haversine_km, load_stations, nearest, nearest_within, Neighbor, Station, DEFAULT_K,
-    MAX_RADIUS_KM,
+    haversine_km, load_stations, nearest, nearest_within, parse_stations, Neighbor, Station,
+    DEFAULT_K, MAX_RADIUS_KM,
 };
