@@ -13,6 +13,27 @@ This is a Rust reimplementation of a kNN weather estimator originally
 written in JavaScript for a browser demo. The crate is the source of truth
 for the computation now.
 
+## Demo
+
+A browser page at `web/index.html`: pick a city or type coordinates, Fetch
+finds the nearest stations and their live observations, Compute runs the
+`weather` crate's estimate on them. Runs entirely client-side (WebAssembly).
+
+Published at https://idle-intelligence.github.io/weather-web/ (`tools/publish-pages.sh`
+builds `weather-wasm` and pushes `web/` to an orphan `gh-pages` branch).
+
+To run locally:
+
+```
+wasm-pack build weather-wasm --target web --release
+cp weather-wasm/pkg/weather_wasm.js weather-wasm/pkg/weather_wasm_bg.wasm web/pkg/
+python3 -m http.server 8000 --directory web
+```
+
+Then open http://localhost:8000/. The page fetches the station list from
+the `idle-intelligence/metar-stations` Hugging Face dataset; `?local=1`
+reads a local copy from the gitignored `web/data/stations.json` instead.
+
 ## Crates
 
 - `weather/` - the library: station loading, haversine nearest-k search,
