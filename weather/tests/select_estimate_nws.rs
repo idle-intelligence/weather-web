@@ -1,11 +1,19 @@
 //! Tests for select.rs, estimate.rs and nws.rs: the logic that moved out of
-//! the trucs.ai page's index.html/sources.js after TC found bugs in it that
-//! tests should have caught (station selection, the 100 km radius, the
+//! the trucs.ai page's index.html/sources.js after bugs were found in it
+//! that tests should have caught (station selection, the 100 km radius, the
 //! removed farther-station fallback, the 90-minute freshness cutoff, and NWS
 //! unit parsing).
 //!
-//! Station data: data/stations.json (same file staged at
-//! the Hugging Face dataset idle-intelligence/metar-stations).
+//! Station data: tests/fixtures/stations_subset.json, a small real subset of
+//! the full station list (published as the idle-intelligence/metar-stations
+//! dataset on Hugging Face) covering the points these tests check: the
+//! Sahara point (nearest station DATM, far outside the 100 km radius), the
+//! Lille 100 km ring (LFQQ, EBOS, LFAQ, LFAC, EHFS selected; EHSG one ring
+//! step farther out and cut by k=5; the once-listed EBSZ/EBCV/EBFN/LFYG/
+//! LFOW/LFQI do not exist in the station list at all), a Paris cluster
+//! (LFPG and its nearest neighbours), an Alps cluster (Aosta/Sion/Annecy/
+//! Geneva/Chambery/Payerne, a sparser mountain ring), and the New York and
+//! Toronto city clusters.
 //! NWS fixtures: two real api.weather.gov /observations/latest responses,
 //! fetched once with `curl -H 'User-Agent: weather-web-tests'` (no email).
 
@@ -16,11 +24,14 @@ use weather::observation::Observation;
 use weather::select::select;
 use weather::stations::{haversine_km, load_stations};
 
-const NOW_MILLIS: i64 = 1790524969585; // matches data/snapshot.json's fetched_at_millis
+const NOW_MILLIS: i64 = 1790524969585; // matches tests/fixtures/snapshot_subset.json's fetched_at_millis
 
 fn stations() -> Vec<weather::stations::Station> {
-    load_stations(concat!(env!("CARGO_MANIFEST_DIR"), "/../data/stations.json"))
-        .expect("loading data/stations.json")
+    load_stations(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/tests/fixtures/stations_subset.json"
+    ))
+    .expect("loading tests/fixtures/stations_subset.json")
 }
 
 fn fresh_obs(temp_c: f64, dewpoint_c: f64, wind_ms: f64, wind_dir_deg: f64, pressure_hpa: f64, minutes_ago: f64) -> Observation {
@@ -64,6 +75,50 @@ fn lille_selects_the_expected_five_stations_and_no_others() {
             "{excluded} should not have been selected, got {icaos:?}"
         );
     }
+}
+
+#[test]
+fn paris_selects_lfpg_and_its_four_nearest_neighbours() {
+    let stations = stations();
+    let sel = select(&stations, 49.0153, 2.5344).expect("stations list is non-empty");
+    let icaos: Vec<&str> = sel.stations.iter().map(|n| n.station.icao.as_str()).collect();
+    assert_eq!(icaos, vec!["LFPG", "LFPB", "LFPO", "LFPV", "LFPT"]);
+}
+
+#[test]
+fn alps_selects_the_sparser_mountain_ring() {
+    let stations = stations();
+    let sel = select(&stations, 45.9237, 6.8694).expect("stations list is non-empty");
+    let icaos: Vec<&str> = sel.stations.iter().map(|n| n.station.icao.as_str()).collect();
+    assert_eq!(icaos, vec!["LIMW", "LSGS", "LFLP", "LSGG", "LFLB"]);
+    assert!(
+        !icaos.contains(&"LSMP"),
+        "LSMP is one ring step farther out and should be cut by k=5, got {icaos:?}"
+    );
+}
+
+#[test]
+fn new_york_selects_the_five_closest_stations() {
+    let stations = stations();
+    let sel = select(&stations, 40.7128, -74.0060).expect("stations list is non-empty");
+    let icaos: Vec<&str> = sel.stations.iter().map(|n| n.station.icao.as_str()).collect();
+    assert_eq!(icaos, vec!["JRB", "NYC", "LGA", "EWR", "TEB"]);
+    assert!(
+        !icaos.contains(&"JFK"),
+        "JFK is the 6th closest station in this cluster and should be cut by k=5, got {icaos:?}"
+    );
+}
+
+#[test]
+fn toronto_selects_the_five_closest_stations() {
+    let stations = stations();
+    let sel = select(&stations, 43.6532, -79.3832).expect("stations list is non-empty");
+    let icaos: Vec<&str> = sel.stations.iter().map(|n| n.station.icao.as_str()).collect();
+    assert_eq!(icaos, vec!["CYTZ", "CXTO", "CYYZ", "CWWZ", "CYOO"]);
+    assert!(
+        !icaos.contains(&"CWWB"),
+        "CWWB is the 6th closest station in this cluster and should be cut by k=5, got {icaos:?}"
+    );
 }
 
 // ---- estimate: no station within radius -> no estimate, no fallback ----

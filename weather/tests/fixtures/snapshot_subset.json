@@ -1,0 +1,274 @@
+{
+  "fetched_at_millis": 1790524969585,
+  "observations": {
+    "DATM": {
+      "tempC": 37.0,
+      "dewpointC": 7.000000000000001,
+      "windMs": 3.086664,
+      "windDirDeg": 40.0,
+      "pressureHpa": 1009.9976241439,
+      "obsTimeMillis": 1790510400000,
+      "source": "IEM"
+    },
+    "LFQQ": {
+      "tempC": 25.0,
+      "dewpointC": 13.0,
+      "windMs": 4.115552,
+      "windDirDeg": 200.0,
+      "pressureHpa": 1013.9976280119,
+      "obsTimeMillis": 1790524800000,
+      "source": "IEM"
+    },
+    "EBOS": {
+      "tempC": 21.999999999999996,
+      "dewpointC": 14.000000000000002,
+      "windMs": 5.6588840000000005,
+      "windDirDeg": 200.0,
+      "pressureHpa": 1013.9976280119,
+      "obsTimeMillis": 1790524200000,
+      "source": "IEM"
+    },
+    "LFAQ": {
+      "tempC": 25.0,
+      "dewpointC": 14.000000000000002,
+      "windMs": 6.173328,
+      "windDirDeg": 190.0,
+      "pressureHpa": 1014.9975951150001,
+      "obsTimeMillis": 1790515800000,
+      "source": "IEM"
+    },
+    "LFAC": {
+      "tempC": 21.999999999999996,
+      "dewpointC": 13.0,
+      "windMs": 6.687772,
+      "windDirDeg": 210.0,
+      "pressureHpa": 1013.9976280119,
+      "obsTimeMillis": 1790523000000,
+      "source": "IEM"
+    },
+    "EHFS": {
+      "tempC": 21.0,
+      "dewpointC": 16.0,
+      "windMs": 6.687772,
+      "windDirDeg": 190.0,
+      "pressureHpa": 1013.9976280119,
+      "obsTimeMillis": 1790522700000,
+      "source": "IEM"
+    },
+    "EHSG": {
+      "tempC": 20.0,
+      "dewpointC": 14.000000000000002,
+      "windMs": 3.086664,
+      "windDirDeg": 150.0,
+      "pressureHpa": 1013.9976280119,
+      "obsTimeMillis": 1790524500000,
+      "source": "IEM"
+    },
+    "LFPG": {
+      "tempC": 26.999999999999996,
+      "dewpointC": 13.0,
+      "windMs": 5.6588840000000005,
+      "windDirDeg": 210.0,
+      "pressureHpa": 1014.9975951150001,
+      "obsTimeMillis": 1790524800000,
+      "source": "IEM"
+    },
+    "LFPB": {
+      "tempC": 26.999999999999996,
+      "dewpointC": 13.0,
+      "windMs": 4.115552,
+      "windDirDeg": 210.0,
+      "pressureHpa": 1014.9975951150001,
+      "obsTimeMillis": 1790524800000,
+      "source": "IEM"
+    },
+    "LFPO": {
+      "tempC": 26.999999999999996,
+      "dewpointC": 13.0,
+      "windMs": 5.14444,
+      "windDirDeg": 220.0,
+      "pressureHpa": 1014.9975951150001,
+      "obsTimeMillis": 1790524800000,
+      "source": "IEM"
+    },
+    "LFPV": {
+      "tempC": 25.0,
+      "dewpointC": 13.0,
+      "windMs": 4.629996,
+      "windDirDeg": 220.0,
+      "pressureHpa": 1014.9975951150001,
+      "obsTimeMillis": 1790524800000,
+      "source": "IEM"
+    },
+    "LFPT": {
+      "tempC": 26.999999999999996,
+      "dewpointC": 13.0,
+      "windMs": 5.6588840000000005,
+      "windDirDeg": 210.0,
+      "pressureHpa": 1014.9975951150001,
+      "obsTimeMillis": 1790515800000,
+      "source": "IEM"
+    },
+    "LFPN": {
+      "tempC": 28.000000000000004,
+      "dewpointC": 15.0,
+      "windMs": 5.6588840000000005,
+      "windDirDeg": 230.0,
+      "pressureHpa": 1014.9975951150001,
+      "obsTimeMillis": 1790523000000,
+      "source": "IEM"
+    },
+    "LIMW": {
+      "tempC": 24.0,
+      "dewpointC": 12.0,
+      "windMs": 5.6588840000000005,
+      "windDirDeg": 90.0,
+      "pressureHpa": 1020.9976009170001,
+      "obsTimeMillis": 1790524200000,
+      "source": "IEM"
+    },
+    "LSGS": {
+      "tempC": 26.0,
+      "dewpointC": 7.000000000000001,
+      "windMs": 5.6588840000000005,
+      "windDirDeg": 260.0,
+      "pressureHpa": 1018.997598983,
+      "obsTimeMillis": 1790524200000,
+      "source": "IEM"
+    },
+    "LFLP": {
+      "tempC": 26.999999999999996,
+      "dewpointC": 12.0,
+      "windMs": 2.57222,
+      "windDirDeg": 230.0,
+      "pressureHpa": 1018.997598983,
+      "obsTimeMillis": 1790524800000,
+      "source": "IEM"
+    },
+    "LSGG": {
+      "tempC": 26.0,
+      "dewpointC": 10.999999999999998,
+      "windMs": 2.57222,
+      "windDirDeg": 110.0,
+      "pressureHpa": 1018.997598983,
+      "obsTimeMillis": 1790524200000,
+      "source": "IEM"
+    },
+    "LFLB": {
+      "tempC": 25.0,
+      "dewpointC": 15.0,
+      "windMs": 1.543332,
+      "windDirDeg": 20.0,
+      "pressureHpa": 1017.9975980160001,
+      "obsTimeMillis": 1790524800000,
+      "source": "IEM"
+    },
+    "LSMP": {
+      "tempC": 26.0,
+      "dewpointC": 10.0,
+      "windMs": 1.028888,
+      "pressureHpa": 1018.997598983,
+      "obsTimeMillis": 1790524200000,
+      "source": "IEM"
+    },
+    "JRB": {
+      "windMs": 7.71666,
+      "windDirDeg": 30.0,
+      "pressureHpa": 1003.387357,
+      "obsTimeMillis": 1790524560000,
+      "source": "IEM"
+    },
+    "NYC": {
+      "obsTimeMillis": 1790521200000,
+      "source": "IEM"
+    },
+    "LGA": {
+      "tempC": 17.22222222222222,
+      "dewpointC": 16.11111111111111,
+      "windMs": 10.28888,
+      "windDirDeg": 60.0,
+      "pressureHpa": 1003.387357,
+      "obsTimeMillis": 1790524260000,
+      "source": "IEM"
+    },
+    "EWR": {
+      "tempC": 16.666666666666668,
+      "dewpointC": 16.11111111111111,
+      "windMs": 9.259992,
+      "windDirDeg": 40.0,
+      "pressureHpa": 1003.048718,
+      "obsTimeMillis": 1790524260000,
+      "source": "IEM"
+    },
+    "TEB": {
+      "tempC": 17.22222222222222,
+      "dewpointC": 15.555555555555555,
+      "windMs": 3.601108,
+      "windDirDeg": 40.0,
+      "pressureHpa": 1003.387357,
+      "obsTimeMillis": 1790524380000,
+      "source": "IEM"
+    },
+    "JFK": {
+      "tempC": 18.88888888888889,
+      "dewpointC": 16.666666666666668,
+      "windMs": 9.259992,
+      "windDirDeg": 90.0,
+      "pressureHpa": 1003.387357,
+      "obsTimeMillis": 1790524260000,
+      "source": "IEM"
+    },
+    "CYTZ": {
+      "tempC": 21.0,
+      "dewpointC": 10.0,
+      "windMs": 3.601108,
+      "windDirDeg": 30.0,
+      "pressureHpa": 1015.917,
+      "obsTimeMillis": 1790521200000,
+      "source": "IEM"
+    },
+    "CXTO": {
+      "tempC": 19.72222222222222,
+      "dewpointC": 8.61111111111111,
+      "pressureHpa": 1016.2,
+      "obsTimeMillis": 1790521200000,
+      "source": "IEM"
+    },
+    "CYYZ": {
+      "tempC": 20.0,
+      "dewpointC": 9.000000000000002,
+      "windMs": 5.14444,
+      "windDirDeg": 350.0,
+      "pressureHpa": 1016.2556390000001,
+      "obsTimeMillis": 1790521200000,
+      "source": "IEM"
+    },
+    "CWWZ": {
+      "tempC": 17.61111111111111,
+      "dewpointC": 11.38888888888889,
+      "windMs": 7.71666,
+      "windDirDeg": 30.0,
+      "pressureHpa": 1015.6,
+      "obsTimeMillis": 1790521200000,
+      "source": "IEM"
+    },
+    "CYOO": {
+      "tempC": 20.0,
+      "dewpointC": 10.0,
+      "windMs": 5.6588840000000005,
+      "windDirDeg": 10.0,
+      "pressureHpa": 1015.917,
+      "obsTimeMillis": 1790521200000,
+      "source": "IEM"
+    },
+    "CWWB": {
+      "tempC": 19.0,
+      "dewpointC": 8.88888888888889,
+      "windMs": 4.629996,
+      "windDirDeg": 360.0,
+      "pressureHpa": 1016.3,
+      "obsTimeMillis": 1790521200000,
+      "source": "IEM"
+    }
+  }
+}
