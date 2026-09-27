@@ -1,4 +1,4 @@
-// weather-client.js — thin browser client over the weather-wasm package.
+// weather-client.js - thin browser client over the weather-wasm package.
 //
 // All computation (nearest-station search, inverse-distance weighting,
 // physics corrections) runs in the `weather` Rust crate compiled to
@@ -31,7 +31,7 @@ export async function loadStations(local) {
   return new Stations(text);
 }
 
-// Iowa Environmental Mesonet currents.json — global METAR observations, one
+// Iowa Environmental Mesonet currents.json - global METAR observations, one
 // call for any number of stations. Parsing happens in the wasm package.
 async function fetchIem(icaos) {
   const url = new URL('https://mesonet.agron.iastate.edu/api/1/currents.json');
@@ -42,7 +42,7 @@ async function fetchIem(icaos) {
   return parseIemCurrents(text);
 }
 
-// api.weather.gov — US stations only. Id mapping and body parsing happen in
+// api.weather.gov - US stations only. Id mapping and body parsing happen in
 // the wasm package.
 async function fetchNws(icao) {
   const res = await fetch(`https://api.weather.gov/stations/${nwsStationId(icao)}/observations/latest`);

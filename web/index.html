@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>weather-web — idle intelligence</title>
+    <title>weather-web - idle intelligence</title>
     <link rel="icon" href="favicon.ico">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -295,8 +295,8 @@
             live observations happens in JavaScript.
         </p>
         <p class="info">
-            <a href="https://trucs.ai/knn-weather/">trucs.ai/knn-weather</a> — the original hand-written JS demo.<br>
-            <a href="https://trucs.ai/blog/browser-weather">trucs.ai/blog/browser-weather</a> — how it works.
+            <a href="https://trucs.ai/knn-weather/">trucs.ai/knn-weather</a> - the original hand-written JS demo.<br>
+            <a href="https://trucs.ai/blog/browser-weather">trucs.ai/blog/browser-weather</a> - how it works.
         </p>
     </section>
 
@@ -469,7 +469,7 @@
                 const nearest = selection?.nearest;
                 setStatus(
                     nearest
-                        ? `no station within 100 km — nearest is ${nearest.station.icao}, ${fmtDistance(nearest.distance)} away`
+                        ? `no station within 100 km - nearest is ${nearest.station.icao}, ${fmtDistance(nearest.distance)} away`
                         : 'no stations loaded',
                     'error',
                 );
@@ -503,7 +503,7 @@
 
         function renderResult(est) {
             if (est.status.kind === 'noStationWithinRadius') {
-                resultPanel.innerHTML = `<p class="info">no station within 100 km — nearest is ${est.status.nearestId}, ${fmtDistance(est.status.nearestKm)} away</p>`;
+                resultPanel.innerHTML = `<p class="info">no station within 100 km - nearest is ${est.status.nearestId}, ${fmtDistance(est.status.nearestKm)} away</p>`;
                 return;
             }
             if (est.status.kind === 'noFreshObservation') {
