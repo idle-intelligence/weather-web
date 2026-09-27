@@ -188,7 +188,7 @@
             column-gap: 10px;
             row-gap: 2px;
             font-family: 'IBM Plex Mono', monospace;
-            font-size: 11px;
+            font-size: 12px;
             padding: 6px 0;
             border-top: 1px solid var(--border);
         }
@@ -555,7 +555,7 @@
                 { label: 'temperature', value: fmtTemp(est.temperatureC) },
                 { label: 'dew point', value: fmtTemp(est.dewpointC) },
                 { label: 'wind', value: fmtWind(est.windSpeedMs, est.windDirDeg) },
-                { label: 'pressure', value: fmtPressure(est.pressureStationHpa ?? est.pressureQnhHpa) },
+                { label: 'pressure', value: fmtPressure(est.pressureQnhHpa) },
             ];
             resultPanel.innerHTML = lines.map((l) => `
                 <div class="result-line">
