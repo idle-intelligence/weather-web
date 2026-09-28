@@ -208,6 +208,7 @@
         .station-row .dew { width: 7ch; text-align: right; }
         .station-row .wind { width: 12ch; text-align: right; }
         .station-row .pressure { width: 8ch; text-align: right; }
+        .station-row.station-head, .station-row.station-head .icao { color: var(--faint); font-weight: 400; border-top: none; }
         .station-row.stale { color: var(--faint); }
         .station-row.stale .icao { color: var(--faint); }
         .station-row .linebreak { display: none; }
@@ -291,7 +292,7 @@
     <section id="stationsSection" style="display:none">
         <h2>stations <span class="sub">· up to 12 nearest, within 100 km</span></h2>
         <div class="station-list" id="stationList"></div>
-        <p class="info" id="staleNote" style="display:none">Greyed stations either haven't reported in the last 7 days or reported more than 90 minutes ago; both are left out of the estimate.</p>
+        <p class="info" id="staleNote" style="display:none">7d: reported in the last 7 days. Greyed stations either haven't reported in the last 7 days or reported more than 90 minutes ago; both are left out of the estimate.</p>
     </section>
 
     <section id="estimateSection" style="display:none">
@@ -485,7 +486,19 @@
         }
 
         function renderStationList(neighbors, observations, maxAge) {
-            stationList.innerHTML = '';
+            stationList.innerHTML = `
+                <div class="station-row station-head">
+                    <span class="icao">id</span>
+                    <span class="name">station</span>
+                    <span class="distance">dist</span>
+                    <span class="reported">7d</span>
+                    <span class="age">report</span>
+                    <span class="linebreak"></span>
+                    <span class="temp">temp</span>
+                    <span class="dew">dew pt</span>
+                    <span class="wind">wind</span>
+                    <span class="pressure">pres</span>
+                </div>`;
             let anyStale = false;
             for (const n of neighbors) {
                 const obs = observations[n.station.icao] ?? null;
