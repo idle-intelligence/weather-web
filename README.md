@@ -138,7 +138,7 @@ list and of saved snapshots; it is not committed, and no test depends on it.
 
 ### Using your own station list
 
-`Stations` takes the JSON text of any list of rows `[id, lat, lon, elev_m, name, country]`, optionally followed by `reported` (true or false) and the last report time; rows without the flag count as reporting. Nothing in the format is specific to METAR. The tunables are parameters: how many stations to list (default 12), the radius (100 km), how many reporting stations the estimate uses (5) and the maximum observation age (90 minutes), through `select_with` / `estimate_with` in Rust and `selectWithParams` / `estimateWithParams` in JavaScript.
+`Stations` takes the JSON text of any list of rows `[id, lat, lon, elev_m, name, country]`, optionally followed by `reported` (true or false) and the last report time; rows without the flag count as reporting. Nothing in the format is specific to METAR. The tunables are parameters: how many stations to list (default 12, or no limit at all: every station within the radius), the radius (100 km), how many reporting stations the estimate uses (5) and the maximum observation age (90 minutes), through `select_with` / `estimate_with` in Rust and `selectWithParams` / `estimateWithParams` in JavaScript. Pass `k: None` in Rust or `null`/`undefined` for `k` in JavaScript to list every station within the radius instead of capping the count.
 
 Selection is a linear scan, about 290 ns per station in a release build;
 measure it with `cargo run --release --example bench_select -- <station list>`.

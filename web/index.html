@@ -290,7 +290,7 @@
     </section>
 
     <section id="stationsSection" style="display:none">
-        <h2>stations <span class="sub">· up to 12 nearest, within 100 km</span></h2>
+        <h2>stations <span class="sub">· all stations within 100 km</span></h2>
         <div class="station-list" id="stationList"></div>
         <p class="info" id="staleNote" style="display:none">7d: reported in the last 7 days. Greyed stations either haven't reported in the last 7 days or reported more than 90 minutes ago; both are left out of the estimate.</p>
     </section>
@@ -344,7 +344,7 @@
 
         // All tunables for station selection and the estimate, in one place.
         const CONFIG = {
-            STATION_LIST_K: 12,   // nearest stations to list
+            STATION_LIST_K: null, // null: list every station within RADIUS_KM
             RADIUS_KM: 100,       // how far a station may be to count at all
             ESTIMATE_K: 5,        // how many of the listed stations to average over
             MAX_AGE_MIN: 90,      // how old an observation may be to still count
