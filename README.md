@@ -25,6 +25,7 @@ builds `weather-wasm` and pushes `web/` to an orphan `gh-pages` branch).
 To run locally:
 
 ```
+mkdir -p web/pkg web/data
 wasm-pack build weather-wasm --target web --release
 cp weather-wasm/pkg/weather_wasm.js weather-wasm/pkg/weather_wasm_bg.wasm web/pkg/
 python3 -m http.server 8000 --directory web
@@ -32,7 +33,18 @@ python3 -m http.server 8000 --directory web
 
 Then open http://localhost:8000/. The page fetches the station list from
 the `idle-intelligence/metar-stations` Hugging Face dataset; `?local=1`
-reads a local copy from the gitignored `web/data/stations.json` instead.
+reads a local copy from the gitignored `web/data/stations_all.json` instead.
+Get that file with
+
+```
+hf download idle-intelligence/metar-stations stations_all.json --repo-type dataset --local-dir web/data
+```
+
+or a plain
+
+```
+curl -L -o web/data/stations_all.json https://huggingface.co/datasets/idle-intelligence/metar-stations/resolve/main/stations_all.json
+```
 
 ## Crates
 
