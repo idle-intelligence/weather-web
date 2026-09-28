@@ -1,0 +1,105 @@
+name: pages
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Install wasm-pack
+        run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+
+      - name: Test
+        run: cargo test --workspace
+
+      - name: Clippy
+        run: cargo clippy --workspace --all-targets -- -D warnings
+
+      - name: Build weather-wasm
+        run: wasm-pack build weather-wasm --target web --release
+
+      - name: Assemble site
+        run: |
+          set -euo pipefail
+          rm -rf _site
+          mkdir -p _site
+          cp -R web _site/web
+          rm -rf _site/web/pkg
+          mkdir -p _site/web/pkg
+          cp weather-wasm/pkg/weather_wasm.js weather-wasm/pkg/weather_wasm_bg.wasm _site/web/pkg/
+          if [ -f weather-wasm/pkg/package.json ]; then
+            cp weather-wasm/pkg/package.json _site/web/pkg/
+          fi
+
+      - name: Tag and rewrite ?v= build tag
+        run: |
+          set -euo pipefail
+          TAG="$(sha256sum weather-wasm/pkg/weather_wasm_bg.wasm | cut -c1-7)"
+          echo "build tag: $TAG"
+          grep -rl '?v=' _site/web | xargs sed -i "s/?v=[0-9a-fA-F]\{7\}/?v=$TAG/g"
+
+          COUNT="$(grep -rEo '\?v=[0-9a-fA-F]+' _site/web | wc -l)"
+          if [ "$COUNT" -eq 0 ]; then
+            echo "error: no ?v= build-tag URLs found in the assembled site" >&2
+            exit 1
+          fi
+
+          BAD="$(grep -rEo '\?v=[0-9a-fA-F]+' _site/web | grep -v ":?v=$TAG\$" || true)"
+          if [ -n "$BAD" ]; then
+            echo "error: found ?v= URLs not rewritten to $TAG:" >&2
+            echo "$BAD" >&2
+            exit 1
+          fi
+
+      - name: Check built wasm has no local build paths
+        run: |
+          set -euo pipefail
+          FAILED=0
+          for pat in '/Users/' '/home/runner/.cargo'; do
+            COUNT="$(grep -c -a "$pat" _site/web/pkg/weather_wasm_bg.wasm || true)"
+            if [ "$COUNT" -gt 0 ]; then
+              echo "error: found '$pat' $COUNT time(s) in weather_wasm_bg.wasm" >&2
+              FAILED=1
+            fi
+          done
+          if [ "$FAILED" -ne 0 ]; then
+            exit 1
+          fi
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
