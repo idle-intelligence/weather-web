@@ -24,7 +24,7 @@ A browser page at `web/index.html`: pick a city or type coordinates, Fetch
 finds the nearest stations and their live observations, Compute runs the
 `weather` crate's estimate on them. Runs entirely client-side (WebAssembly).
 
-Published at https://idle-intelligence.github.io/weather-web/ (`tools/publish-pages.sh`
+Published at https://idle-intelligence.github.io/weather-web/web/ (`tools/publish-pages.sh`
 builds `weather-wasm` and pushes `web/` to an orphan `gh-pages` branch).
 
 To run locally:

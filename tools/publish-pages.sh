@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Build weather-wasm and publish the committed HEAD's web/ demo to an orphan
-# `gh-pages` branch, following the layout used by ../tts-web and ../t0-web
-# (repo root = the served tree).
+# `gh-pages` branch. web/ is published as a subdirectory of the branch root,
+# so the demo serves at .../weather-web/web/, matching the layout used by
+# ../tts-web (.../tts-web/web/) and ../t0-web (.../t0-web/web/).
 #
 # web/weather-client.js resolves the wasm module at ./pkg/weather_wasm.js,
 # relative to itself; that is the only wasm build weather-web ships (no
