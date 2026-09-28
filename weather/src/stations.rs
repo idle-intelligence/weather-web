@@ -124,11 +124,13 @@ pub fn nearest(stations: &[Station], lat: f64, lon: f64, k: usize) -> Vec<Neighb
 /// Like `nearest`, but drops candidates beyond `max_radius_km` and can
 /// exclude one station by icao. Used for leave-one-out validation, where the
 /// station being estimated must not appear among its own neighbours.
+/// `k: None` returns every station within `max_radius_km`, sorted by
+/// distance, with no count limit.
 pub fn nearest_within(
     stations: &[Station],
     lat: f64,
     lon: f64,
-    k: usize,
+    k: Option<usize>,
     max_radius_km: f64,
     exclude_icao: Option<&str>,
 ) -> Vec<Neighbor> {
@@ -142,6 +144,8 @@ pub fn nearest_within(
         .filter(|n| n.distance <= max_radius_km)
         .collect();
     scored.sort_by(|a, b| a.distance.partial_cmp(&b.distance).unwrap());
-    scored.truncate(k);
+    if let Some(k) = k {
+        scored.truncate(k);
+    }
     scored
 }

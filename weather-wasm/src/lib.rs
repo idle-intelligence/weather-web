@@ -93,13 +93,14 @@ impl Stations {
 
     /// Like `select`, but with a caller-chosen station count and radius
     /// (km), e.g. listing 12 stations within 100 km including ones that
-    /// never report (their `active` field is false).
+    /// never report (their `active` field is false). `k: null`/`undefined`
+    /// lists every station within `max_radius_km`, with no count limit.
     #[wasm_bindgen(js_name = selectWithParams)]
     pub fn select_with_params(
         &self,
         lat: f64,
         lon: f64,
-        k: usize,
+        k: Option<usize>,
         max_radius_km: f64,
     ) -> Result<JsValue, JsValue> {
         let params = SelectParams { k, max_radius_km };

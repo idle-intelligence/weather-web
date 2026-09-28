@@ -444,7 +444,7 @@ fn run_validate(args: impl Iterator<Item = String>) -> Result<()> {
             &stations,
             station.lat,
             station.lon,
-            DEFAULT_K,
+            Some(DEFAULT_K),
             MAX_RADIUS_KM,
             Some(&station.icao),
         );

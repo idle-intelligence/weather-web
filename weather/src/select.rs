@@ -28,21 +28,22 @@ pub struct Selection {
 }
 
 /// Parameters for `select_with`: how many nearest stations to list, and how
-/// far away one may be to count.
+/// far away one may be to count. `k: None` lists every station within
+/// `max_radius_km`, sorted by distance, with no count limit.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct SelectParams {
-    pub k: usize,
+    pub k: Option<usize>,
     pub max_radius_km: f64,
 }
 
 impl Default for SelectParams {
-    /// `k: DEFAULT_LIST_K (12)`, `max_radius_km: MAX_RADIUS_KM (100)`: the
-    /// weather-web repo demo's defaults. The trucs.ai page's own default
-    /// (`k: 5`) is `select`'s hard-coded behaviour, not this default, so
-    /// that page keeps working unchanged.
+    /// `k: Some(DEFAULT_LIST_K) (12)`, `max_radius_km: MAX_RADIUS_KM (100)`:
+    /// the weather-web repo demo's defaults. The trucs.ai page's own
+    /// default (`k: 5`) is `select`'s hard-coded behaviour, not this
+    /// default, so that page keeps working unchanged.
     fn default() -> Self {
         SelectParams {
-            k: DEFAULT_LIST_K,
+            k: Some(DEFAULT_LIST_K),
             max_radius_km: MAX_RADIUS_KM,
         }
     }
@@ -58,7 +59,7 @@ pub fn select(stations: &[Station], lat: f64, lon: f64) -> Option<Selection> {
         lat,
         lon,
         &SelectParams {
-            k: DEFAULT_K,
+            k: Some(DEFAULT_K),
             max_radius_km: MAX_RADIUS_KM,
         },
     )

@@ -118,13 +118,32 @@ fn lille_select_is_active_agnostic_and_picks_the_nearest_five() {
 fn lille_select_with_lists_up_to_twelve_including_silent_stations() {
     let stations = stations();
     let params = SelectParams {
-        k: weather::stations::DEFAULT_LIST_K,
+        k: Some(weather::stations::DEFAULT_LIST_K),
         max_radius_km: weather::stations::MAX_RADIUS_KM,
     };
     let sel = select_with(&stations, LILLE.0, LILLE.1, &params).expect("stations list is non-empty");
     let icaos: Vec<&str> = sel.stations.iter().map(|n| n.station.icao.as_str()).collect();
     // Every real station within 100 km of Lille in the fixture, nearest
     // first, whether it reports or not.
+    assert_eq!(
+        icaos,
+        vec!["LFQQ", "LFQI", "EBCV", "EBFN", "EBOS", "LFAQ", "LFAC", "LFOW", "EHFS", "EHSG"]
+    );
+}
+
+#[test]
+fn lille_select_with_no_limit_lists_every_station_within_radius() {
+    let stations = stations();
+    let params = SelectParams {
+        k: None,
+        max_radius_km: weather::stations::MAX_RADIUS_KM,
+    };
+    let sel = select_with(&stations, LILLE.0, LILLE.1, &params).expect("stations list is non-empty");
+    let icaos: Vec<&str> = sel.stations.iter().map(|n| n.station.icao.as_str()).collect();
+    // With no count limit, every real fixture station within 100 km of
+    // Lille comes back, nearest first, whether it reports or not: the same
+    // set the k=12 test above gets, because the fixture has fewer than 12
+    // stations in range.
     assert_eq!(
         icaos,
         vec!["LFQQ", "LFQI", "EBCV", "EBFN", "EBOS", "LFAQ", "LFAC", "LFOW", "EHFS", "EHSG"]

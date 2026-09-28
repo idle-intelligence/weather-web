@@ -15,7 +15,7 @@ use weather::stations::load_stations;
 fn main() {
     let path = std::env::args().nth(1).expect("usage: bench_select <stations.json>");
     let stations = load_stations(&path).expect("loading stations file");
-    let params = SelectParams { k: 12, max_radius_km: 100.0 };
+    let params = SelectParams { k: Some(12), max_radius_km: 100.0 };
     let lat = 50.6292;
     let lon = 3.0573;
 
