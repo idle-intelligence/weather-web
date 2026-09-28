@@ -8,21 +8,24 @@
 //! the full station list (published as the idle-intelligence/metar-stations
 //! dataset on Hugging Face) covering the points these tests check: the
 //! Sahara point (nearest station DATM, far outside the 100 km radius), the
-//! Lille 100 km ring (LFQQ, EBOS, LFAQ, LFAC, EHFS selected; EHSG one ring
-//! step farther out and cut by k=5; the once-listed EBSZ/EBCV/EBFN/LFYG/
-//! LFOW/LFQI do not exist in the station list at all), a Paris cluster
-//! (LFPG and its nearest neighbours), an Alps cluster (Aosta/Sion/Annecy/
-//! Geneva/Chambery/Payerne, a sparser mountain ring), and the New York and
-//! Toronto city clusters.
+//! Lille 100 km ring (10 real stations within range: LFQQ, EBOS, LFAQ, LFAC,
+//! EHFS and EHSG report; LFQI, EBCV, EBFN and LFOW are real IEM roster
+//! stations that never reported in the dataset's 7-day window and are
+//! carried here with `active: false`, closer to Lille than some of the
+//! reporting ones -- EBSZ and LFYG, the other two of TC's originally-named
+//! six silent Lille stations, are not IEM ASOS roster stations at all and so
+//! have no real row to add), a Paris cluster (LFPG and its nearest
+//! neighbours), an Alps cluster (Aosta/Sion/Annecy/Geneva/Chambery/Payerne,
+//! a sparser mountain ring), and the New York and Toronto city clusters.
 //! NWS fixtures: two real api.weather.gov /observations/latest responses,
 //! fetched once with `curl -H 'User-Agent: weather-web-tests'` (no email).
 
 use std::collections::HashMap;
-use weather::estimate::{estimate, EstimateStatus};
+use weather::estimate::{estimate, estimate_with, EstimateParams, EstimateStatus};
 use weather::nws::{nws_station_id, parse_nws_latest};
 use weather::observation::Observation;
-use weather::select::select;
-use weather::stations::{haversine_km, load_stations};
+use weather::select::{select, select_with, Selection, SelectParams};
+use weather::stations::{haversine_km, load_stations, Neighbor};
 
 const NOW_MILLIS: i64 = 1790524969585; // matches tests/fixtures/snapshot_subset.json's fetched_at_millis
 
@@ -63,18 +66,117 @@ fn sahara_point_has_no_station_within_radius() {
     assert!(sel.nearest.distance > weather::stations::MAX_RADIUS_KM);
 }
 
-#[test]
-fn lille_selects_the_expected_five_stations_and_no_others() {
+/// Lat/lon used by every Lille test in this file.
+const LILLE: (f64, f64) = (50.6292, 3.0573);
+
+/// Builds a Selection from an explicit list of ICAOs, at the Lille point,
+/// bypassing `select`'s own ranking. Used by tests that exercise the
+/// estimate/corrections logic and want a fixed, known set of stations
+/// regardless of how the fixture's distances happen to rank.
+fn lille_selection_of(icaos: &[&str]) -> Selection {
     let stations = stations();
-    let sel = select(&stations, 50.6292, 3.0573).expect("stations list is non-empty");
+    let neighbours: Vec<Neighbor> = icaos
+        .iter()
+        .map(|icao| {
+            let station = stations
+                .iter()
+                .find(|s| s.icao == *icao)
+                .unwrap_or_else(|| panic!("{icao} not in stations_subset.json"))
+                .clone();
+            let distance = haversine_km(LILLE.0, LILLE.1, station.lat, station.lon);
+            Neighbor { station, distance }
+        })
+        .collect();
+    let nearest = neighbours[0].clone();
+    Selection {
+        stations: neighbours,
+        nearest,
+    }
+}
+
+#[test]
+fn lille_select_is_active_agnostic_and_picks_the_nearest_five() {
+    // `select` (the trucs.ai page's k=5, 100 km defaults) ranks by distance
+    // only: LFQI, EBCV and EBFN are silent (active: false) but are closer to
+    // Lille than EBOS/LFAQ/LFAC/EHFS, so they win the top five. Filtering by
+    // activity is `estimate`'s job, not `select`'s.
+    let stations = stations();
+    let sel = select(&stations, LILLE.0, LILLE.1).expect("stations list is non-empty");
     let icaos: Vec<&str> = sel.stations.iter().map(|n| n.station.icao.as_str()).collect();
-    assert_eq!(icaos, vec!["LFQQ", "EBOS", "LFAQ", "LFAC", "EHFS"]);
-    for excluded in ["EBSZ", "EBCV", "EBFN", "LFYG", "LFOW", "LFQI"] {
+    assert_eq!(icaos, vec!["LFQQ", "LFQI", "EBCV", "EBFN", "EBOS"]);
+    for (icao, active) in [("LFQQ", true), ("LFQI", false), ("EBCV", false), ("EBFN", false), ("EBOS", true)] {
+        let n = sel.stations.iter().find(|n| n.station.icao == icao).unwrap();
+        assert_eq!(n.station.active, active, "{icao} active flag");
+    }
+    for farther in ["LFAQ", "LFAC", "LFOW", "EHFS", "EHSG"] {
         assert!(
-            !icaos.contains(&excluded),
-            "{excluded} should not have been selected, got {icaos:?}"
+            !icaos.contains(&farther),
+            "{farther} is farther than the nearest five and should be cut by k=5, got {icaos:?}"
         );
     }
+}
+
+#[test]
+fn lille_select_with_lists_up_to_twelve_including_silent_stations() {
+    let stations = stations();
+    let params = SelectParams {
+        k: weather::stations::DEFAULT_LIST_K,
+        max_radius_km: weather::stations::MAX_RADIUS_KM,
+    };
+    let sel = select_with(&stations, LILLE.0, LILLE.1, &params).expect("stations list is non-empty");
+    let icaos: Vec<&str> = sel.stations.iter().map(|n| n.station.icao.as_str()).collect();
+    // Every real station within 100 km of Lille in the fixture, nearest
+    // first, whether it reports or not.
+    assert_eq!(
+        icaos,
+        vec!["LFQQ", "LFQI", "EBCV", "EBFN", "EBOS", "LFAQ", "LFAC", "LFOW", "EHFS", "EHSG"]
+    );
+}
+
+#[test]
+fn estimate_with_uses_only_active_fresh_stations_nearest_first() {
+    let sel = lille_selection_of(&[
+        "LFQQ", "LFQI", "EBCV", "EBFN", "EBOS", "LFAQ", "LFAC", "LFOW", "EHFS", "EHSG",
+    ]);
+
+    // Observations are fetched only for the reporting (active) stations, as
+    // the weather-web demo does: LFQI/EBCV/EBFN/LFOW never get an
+    // observation at all.
+    let mut obs: HashMap<String, Observation> = HashMap::new();
+    obs.insert("LFQQ".into(), fresh_obs(14.2, 11.4, 5.6, 230.0, 1018.3, 10.0));
+    obs.insert("EBOS".into(), fresh_obs(14.6, 11.8, 4.9, 220.0, 1018.6, 15.0));
+    obs.insert("LFAQ".into(), fresh_obs(14.8, 11.9, 5.2, 225.0, 1018.5, 20.0));
+    obs.insert("LFAC".into(), fresh_obs(13.9, 11.1, 4.5, 215.0, 1018.1, 25.0));
+    obs.insert("EHFS".into(), fresh_obs(13.5, 10.8, 6.1, 240.0, 1017.9, 5.0));
+    obs.insert("EHSG".into(), fresh_obs(13.6, 10.9, 5.8, 235.0, 1017.8, 30.0));
+
+    let params = EstimateParams { estimate_k: 5, max_age_min: weather::corrections::MAX_AGE_MIN };
+    let est = estimate_with(&sel, &obs, Some(35.0), NOW_MILLIS, &params);
+
+    assert!(matches!(est.status, EstimateStatus::Ok));
+    assert_eq!(est.stations.len(), 10, "every listed station is still reported");
+    assert_eq!(est.stations_used, 5, "capped at estimate_k");
+
+    let used: Vec<&str> = est
+        .stations
+        .iter()
+        .filter(|s| s.used)
+        .map(|s| s.icao.as_str())
+        .collect();
+    // Nearest five active stations with a fresh observation: the silent
+    // LFQI/EBCV/EBFN/LFOW, despite being closer, are skipped.
+    assert_eq!(used, vec!["LFQQ", "EBOS", "LFAQ", "LFAC", "EHFS"]);
+
+    for silent in ["LFQI", "EBCV", "EBFN", "LFOW"] {
+        let s = est.stations.iter().find(|s| s.icao == silent).unwrap();
+        assert!(!s.active, "{silent} should be flagged inactive");
+        assert!(!s.used, "{silent} should not have fed the average");
+        assert!(!s.has_observation, "{silent} was never fetched");
+    }
+    let ehsg = est.stations.iter().find(|s| s.icao == "EHSG").unwrap();
+    assert!(ehsg.active && !ehsg.used, "EHSG has an observation but is 6th nearest, cut by estimate_k");
+
+    assert!(est.temperature_c.is_some());
 }
 
 #[test]
@@ -144,8 +246,9 @@ fn estimate_reports_no_station_within_radius_with_no_fallback() {
 
 #[test]
 fn stale_observation_is_marked_stale_and_excluded_from_the_average() {
-    let stations = stations();
-    let sel = select(&stations, 50.6292, 3.0573).unwrap();
+    // A fixed set of five active, reporting stations, independent of the
+    // fixture's added silent stations (see lille_selection_of).
+    let sel = lille_selection_of(&["LFQQ", "EBOS", "LFAQ", "LFAC", "EHFS"]);
     assert_eq!(sel.stations.len(), 5);
 
     // Four fresh, plausible observations, plus one wildly different value at
@@ -187,8 +290,7 @@ fn stale_observation_is_marked_stale_and_excluded_from_the_average() {
 
 #[test]
 fn no_fresh_observation_leaves_every_value_field_none() {
-    let stations = stations();
-    let sel = select(&stations, 50.6292, 3.0573).unwrap();
+    let sel = lille_selection_of(&["LFQQ", "EBOS", "LFAQ", "LFAC", "EHFS"]);
     assert_eq!(sel.stations.len(), 5);
 
     // All five selected stations have an observation, but every one is past
