@@ -7,9 +7,9 @@
 # relative to itself; that is the only wasm build weather-web ships (no
 # WebGPU/CPU split -- the estimator has no GPU path).
 #
-# web/data (a local copy of stations.json for the `?local=1` dev switch) is
-# gitignored and never published; the page fetches the station list from the
-# idle-intelligence/metar-stations Hugging Face dataset instead.
+# web/data (a local copy of stations_all.json for the `?local=1` dev switch)
+# is gitignored and never published; the page fetches the station list from
+# the idle-intelligence/metar-stations Hugging Face dataset instead.
 #
 # Never checks out gh-pages in the main working tree; never pushes.
 set -euo pipefail

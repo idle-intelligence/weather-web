@@ -9,10 +9,14 @@
 // Bump the ?v= tag below whenever weather-wasm/pkg is rebuilt, in the same
 // commit (import specifiers must be a static string literal, not a
 // template expression).
-import init, { Stations, estimate, parseIemCurrents, parseNwsLatest, nwsStationId, maxAgeMin } from './pkg/weather_wasm.js?v=87d4962';
+import init, { Stations, estimate, estimateWithParams, parseIemCurrents, parseNwsLatest, nwsStationId, maxAgeMin } from './pkg/weather_wasm.js?v=07a0747';
 
-export const STATIONS_URL_HF = 'https://huggingface.co/datasets/idle-intelligence/metar-stations/resolve/main/stations.json';
-export const STATIONS_URL_LOCAL = './data/stations.json';
+// stations_all.json carries every roster station, reporting or not (see
+// idle-intelligence/metar-stations on Hugging Face); stations.json (active
+// only) still works with the same parser for a caller who only wants
+// reporting stations.
+export const STATIONS_URL_HF = 'https://huggingface.co/datasets/idle-intelligence/metar-stations/resolve/main/stations_all.json';
+export const STATIONS_URL_LOCAL = './data/stations_all.json';
 
 let initPromise = null;
 function ensureInit() {
@@ -53,9 +57,11 @@ async function fetchNws(icao) {
 }
 
 // Fetches observations for a list of station rows (as returned by
-// `Stations.select().stations`, each with `.station.icao`/`.station.country`)
-// and merges them NWS-first, then IEM, per station. Returns a plain object
-// keyed by ICAO id, the shape `estimate()` expects.
+// `Stations.select()`/`Stations.selectWithParams().stations`, each with
+// `.station.icao`/`.station.country`) and merges them NWS-first, then IEM,
+// per station. Returns a plain object keyed by ICAO id, the shape
+// `estimate()`/`estimateWithParams()` expects. The caller decides which
+// rows to pass in; the page only fetches for stations flagged `active`.
 export async function fetchObservations(neighbors) {
   const icaos = neighbors.map((n) => n.station.icao);
   let iemMap = {};
@@ -91,4 +97,4 @@ export async function fetchElevation(lat, lon) {
   return typeof body.elevation === 'number' ? body.elevation : undefined;
 }
 
-export { estimate, maxAgeMin };
+export { estimate, estimateWithParams, maxAgeMin };
