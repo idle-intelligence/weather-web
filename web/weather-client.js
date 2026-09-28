@@ -9,7 +9,7 @@
 // Bump the ?v= tag below whenever weather-wasm/pkg is rebuilt, in the same
 // commit (import specifiers must be a static string literal, not a
 // template expression).
-import init, { Stations, estimate, estimateWithParams, parseIemCurrents, parseNwsLatest, nwsStationId, maxAgeMin } from './pkg/weather_wasm.js?v=bcdb5bc';
+import init, { Stations, estimate, estimateWithParams, parseIemCurrents, parseNwsLatest, nwsStationId, maxAgeMin } from './pkg/weather_wasm.js?v=9f05f31';
 
 // stations_all.json carries every roster station, reporting or not (see
 // idle-intelligence/metar-stations on Hugging Face); stations.json (active
