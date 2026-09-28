@@ -1,17 +1,23 @@
 # weather-web
 
 A weather estimate for any point on Earth from the nearest METAR-reporting
-stations: the k nearest stations within a 100 km radius are averaged by
-inverse distance weighting, with corrections for elevation (temperature
-reduced to the target's own elevation using a lapse rate fitted across the
-neighbours), dew point (averaged as vapour pressure, not linearly), pressure
-(altimeter setting reduced to station pressure), and wind (averaged as
-vector components, not scalar speed and direction). Observations older than
-90 minutes are excluded from the corrected average.
+stations.
 
-This is a Rust reimplementation of a kNN weather estimator originally
-written in JavaScript for a browser demo; the crate is now the source of
-truth for the computation.
+[**Try the demo →**](https://idle-intelligence.github.io/weather-web/web/)
+
+The method comes from SenseAI's weather tools (2015), where the author was
+CTO; this crate is a from-scratch Rust implementation and is now the source
+of truth for the computation, also used by the [kNN weather](https://trucs.ai/knn-weather/)
+page and the [Browser weather](https://trucs.ai/blog/browser-weather) blog
+post on trucs.ai.
+
+The k nearest stations within a 100 km radius are averaged by inverse
+distance weighting, with corrections for elevation (temperature reduced to
+the target's own elevation using a lapse rate fitted across the neighbours),
+dew point (averaged as vapour pressure, not linearly), pressure (averaged as
+the sea-level value the airports report, QNH, and kept at sea level), and
+wind (averaged as vector components, not scalar speed and direction).
+Observations older than 90 minutes are excluded from the corrected average.
 
 ## Prerequisites
 
@@ -94,12 +100,13 @@ weather-cli validate --snapshot FILE --stations PATH --out CSV
 ```
 
 `estimate` fetches live observations from IEM for the nearest stations to a
-point and prints the corrected estimate. `snapshot` fetches and saves one
-observation for every station in a list, in batches that respect IEM's
-query-length limit. `validate` runs a leave-one-out check: for every station
-with a fresh observation in a snapshot, it hides that station, estimates its
-weather from its own neighbours, and compares the estimate to what the
-station actually reported.
+point and prints the corrected estimate, including both the sea-level value
+(QNH) and the station pressure at the target's elevation. `snapshot` fetches
+and saves one observation for every station in a list, in batches that
+respect IEM's query-length limit. `validate` runs a leave-one-out check: for
+every station with a fresh observation in a snapshot, it hides that station,
+estimates its weather from its own neighbours, and compares the estimate to
+what the station actually reported.
 
 Example, using the small station subset committed for the tests:
 
@@ -133,12 +140,32 @@ The library reads a `stations.json` file: a JSON array of
 as the `idle-intelligence/metar-stations` dataset on Hugging Face:
 https://huggingface.co/datasets/idle-intelligence/metar-stations
 
+That dataset's roster comes from every Iowa Environmental Mesonet (IEM)
+ASOS/AWOS network, one network per country or per US state/Canadian
+province: 7,534 stations in all, each flagged for whether it reported at
+least once in the trailing 7-day window used to build the file. IEM's
+elevation values are used as given, except for 17 coastal and offshore
+stations (oil platforms, islands, lighthouses) where IEM lists a wrong
+negative or depth value; those 17 are set to 0 m in the dataset build.
+
 `data/` is a gitignored scratch directory for a local copy of the station
 list and of saved snapshots; it is not committed, and no test depends on it.
 
 ### Using your own station list
 
-`Stations` takes the JSON text of any list of rows `[id, lat, lon, elev_m, name, country]`, optionally followed by `reported` (true or false) and the last report time; rows without the flag count as reporting. Nothing in the format is specific to METAR. The tunables are parameters: how many stations to list (default 12, or no limit at all: every station within the radius), the radius (100 km), how many reporting stations the estimate uses (5) and the maximum observation age (90 minutes), through `select_with` / `estimate_with` in Rust and `selectWithParams` / `estimateWithParams` in JavaScript. Pass `k: None` in Rust or `null`/`undefined` for `k` in JavaScript to list every station within the radius instead of capping the count.
+`Stations` takes the JSON text of any list of rows
+`[id, lat, lon, elev_m, name, country]`, optionally followed by `reported`
+(true or false) and the last report time; rows without the flag count as
+reporting. Nothing in the format is specific to METAR.
+
+The tunables are parameters, not hard-coded: how many stations to list, the
+search radius, how many of the listed stations the estimate averages over,
+and the maximum observation age. They are set through `select_with` /
+`estimate_with` in Rust and `selectWithParams` / `estimateWithParams` in
+JavaScript. The library's own default is 12 stations listed within 100 km,
+5 of them used for the estimate, with observations up to 90 minutes old; the
+browser demo instead passes `k: null` (`None` in Rust) to list every station
+within the 100 km radius, with no count cap.
 
 Selection is a linear scan, about 290 ns per station in a release build;
 measure it with `cargo run --release --example bench_select -- <station list>`.
@@ -167,18 +194,12 @@ correction helps but does not close this gap in mountainous terrain.
 
 ## Known limits
 
-Three possible improvements to the altitude handling, none implemented yet:
+There are a few ways this approach could be improved:
 
-- Clamp the fitted lapse rate to a physical range (for example -10 to +8
-  K/km) instead of only falling back on an implausible fit, so the estimate
-  still benefits from a fitted rate while keeping inversions in range.
-- Fit the lapse rate on a wider pool of stations (15 to 20 within 150-200 km)
-  while still averaging the estimate itself on the nearest 5, so the fit has
-  enough elevation spread to be stable.
-- Weight neighbours by height difference as well as distance, using an
-  effective distance `sqrt(d^2 + (lambda*dz)^2)` with `lambda` tuned on the
-  validation set, so a close neighbour at a very different elevation counts
-  for less.
+1. making sure the fit can't run away, by limiting the correction rate to
+   values that have a physical sense.
+2. fitting those rates on more stations.
+3. Also weight the neighbours by height difference as well as distance.
 
 ## License
 
