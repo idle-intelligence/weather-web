@@ -13,6 +13,11 @@ This is a Rust reimplementation of a kNN weather estimator originally
 written in JavaScript for a browser demo. The crate is the source of truth
 for the computation now.
 
+## Prerequisites
+
+Rust with the `wasm32-unknown-unknown` target, `wasm-pack`, Node.js (for the
+parity check), and Python 3 or any static file server for the demo.
+
 ## Demo
 
 A browser page at `web/index.html`: pick a city or type coordinates, Fetch
@@ -78,6 +83,9 @@ saved observation snapshot), so none of this needs network access or a
 local copy of the full dataset.
 
 ## CLI usage
+
+After `cargo build --release -p weather-cli`, run it as `./target/release/weather-cli`,
+or use `cargo run -p weather-cli --release -- estimate ...` directly.
 
 ```
 weather-cli estimate --lat LAT --lon LON --stations PATH [--k N] [--elev METERS]
