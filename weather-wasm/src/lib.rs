@@ -10,13 +10,13 @@
 use serde::Deserialize;
 use std::collections::HashMap;
 use wasm_bindgen::prelude::*;
-use weather::corrections::{compute_corrections, NeighborRow};
-use weather::estimate::{estimate as estimate_core, Estimate};
+use weather::corrections::{compute_corrections, compute_corrections_with, NeighborRow};
+use weather::estimate::{estimate as estimate_core, estimate_with as estimate_with_core, Estimate, EstimateParams};
 use weather::idw::{idw as idw_core, idw_circular_deg as idw_circular_deg_core, Point};
 use weather::nws::{nws_station_id, parse_nws_latest};
 use weather::observation::{parse_iem_currents, Observation};
 use weather::physics::station_pressure_hpa;
-use weather::select::{select as select_core, Selection};
+use weather::select::{select as select_core, select_with as select_with_core, SelectParams, Selection};
 use weather::stations::{haversine_km, nearest, parse_stations, Station};
 
 fn to_js<T: serde::Serialize + ?Sized>(value: &T) -> Result<JsValue, JsValue> {
@@ -90,6 +90,24 @@ impl Stations {
             None => Ok(JsValue::NULL),
         }
     }
+
+    /// Like `select`, but with a caller-chosen station count and radius
+    /// (km), e.g. listing 12 stations within 100 km including ones that
+    /// never report (their `active` field is false).
+    #[wasm_bindgen(js_name = selectWithParams)]
+    pub fn select_with_params(
+        &self,
+        lat: f64,
+        lon: f64,
+        k: usize,
+        max_radius_km: f64,
+    ) -> Result<JsValue, JsValue> {
+        let params = SelectParams { k, max_radius_km };
+        match select_with_core(&self.0, lat, lon, &params) {
+            Some(selection) => to_js(&selection),
+            None => Ok(JsValue::NULL),
+        }
+    }
 }
 
 /// Great-circle distance between two points, in km.
@@ -137,9 +155,13 @@ pub fn compute_corrections_js(
     rows: JsValue,
     target_elev_m: Option<f64>,
     now_millis: f64,
+    max_age_min: Option<f64>,
 ) -> Result<JsValue, JsValue> {
     let rows: Vec<NeighborRow> = from_js(rows)?;
-    let result = compute_corrections(&rows, target_elev_m, now_millis as i64);
+    let result = match max_age_min {
+        Some(max_age_min) => compute_corrections_with(&rows, target_elev_m, now_millis as i64, max_age_min),
+        None => compute_corrections(&rows, target_elev_m, now_millis as i64),
+    };
     to_js(&result)
 }
 
@@ -178,6 +200,28 @@ pub fn estimate(
     let selection: Selection = from_js(selection)?;
     let observations: HashMap<String, Observation> = from_js(observations)?;
     let result: Estimate = estimate_core(&selection, &observations, target_elev_m, now_millis as i64);
+    to_js(&result)
+}
+
+/// Like `estimate`, but with a caller-chosen `estimateK` (how many of the
+/// selected stations to average over) and `maxAgeMin` (how old an
+/// observation may be to still count): only stations flagged active with an
+/// observation no older than `maxAgeMin` are used, nearest first, up to
+/// `estimateK` of them.
+#[wasm_bindgen(js_name = estimateWithParams)]
+pub fn estimate_with_params(
+    selection: JsValue,
+    observations: JsValue,
+    target_elev_m: Option<f64>,
+    now_millis: f64,
+    estimate_k: usize,
+    max_age_min: f64,
+) -> Result<JsValue, JsValue> {
+    let selection: Selection = from_js(selection)?;
+    let observations: HashMap<String, Observation> = from_js(observations)?;
+    let params = EstimateParams { estimate_k, max_age_min };
+    let result: Estimate =
+        estimate_with_core(&selection, &observations, target_elev_m, now_millis as i64, &params);
     to_js(&result)
 }
 

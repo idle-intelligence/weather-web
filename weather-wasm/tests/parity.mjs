@@ -221,10 +221,49 @@ if (saharaEst.status.kind !== 'noStationWithinRadius' || saharaEst.status.neares
   failures++;
 }
 
-// Lille: exactly LFQQ, EBOS, LFAQ, LFAC, EHFS, closest first.
-const lilleSel = stations.select(50.6292, 3.0573);
+// Lille: select (k=5, 100km, active-agnostic) picks the nearest five by
+// distance -- LFQI/EBCV/EBFN are real, silent (active: false) IEM roster
+// stations closer to Lille than EBOS/LFAQ/LFAC/EHFS in this fixture, so they
+// win. See weather/tests/select_estimate_nws.rs for the full story.
+const lilleAgnosticSel = stations.select(50.6292, 3.0573);
+const lilleAgnosticIcaos = lilleAgnosticSel.stations.map((s) => s.station.icao);
+assertClose(lilleAgnosticIcaos, ['LFQQ', 'LFQI', 'EBCV', 'EBFN', 'EBOS'], 'select.lille');
+for (const [icao, active] of [['LFQQ', true], ['LFQI', false], ['EBCV', false], ['EBFN', false], ['EBOS', true]]) {
+  const s = lilleAgnosticSel.stations.find((s) => s.station.icao === icao);
+  if (s.station.active !== active) {
+    console.error(`FAIL select.lille.active: ${icao} expected active=${active}, got ${s.station.active}`);
+    failures++;
+  }
+}
+
+// selectWithParams: listing 12 within 100 km surfaces all 10 real stations
+// in range, silent ones included.
+const lilleListSel = stations.selectWithParams(50.6292, 3.0573, 12, 100.0);
+const lilleListIcaos = lilleListSel.stations.map((s) => s.station.icao);
+assertClose(
+  lilleListIcaos,
+  ['LFQQ', 'LFQI', 'EBCV', 'EBFN', 'EBOS', 'LFAQ', 'LFAC', 'LFOW', 'EHFS', 'EHSG'],
+  'select.lille.withParams',
+);
+
+// A fixed selection of the five active, reporting stations, built directly
+// (not via select) so the tests below are independent of the fixture's
+// added silent stations.
+function selectionOf(icaos) {
+  const all = stations.nearest(50.6292, 3.0573, 40);
+  const byIcao = Object.fromEntries(all.map((r) => [r.icao, r]));
+  const rows = icaos.map((icao) => {
+    const r = byIcao[icao];
+    return {
+      station: { icao: r.icao, lat: r.lat, lon: r.lon, elevM: r.elevM, name: r.name, country: r.country, active: r.active },
+      distance: r.distance,
+    };
+  });
+  return { stations: rows, nearest: rows[0] };
+}
+const lilleSel = selectionOf(['LFQQ', 'EBOS', 'LFAQ', 'LFAC', 'EHFS']);
 const lilleIcaos = lilleSel.stations.map((s) => s.station.icao);
-assertClose(lilleIcaos, ['LFQQ', 'EBOS', 'LFAQ', 'LFAC', 'EHFS'], 'select.lille');
+assertClose(lilleIcaos, ['LFQQ', 'EBOS', 'LFAQ', 'LFAC', 'EHFS'], 'select.lille.fixed');
 
 function obsRow(tempC, dewpointC, windMs, windDirDeg, pressureHpa, minutesAgo) {
   return {
@@ -271,6 +310,30 @@ if (Math.abs(qnhEst.pressureQnhHpa - meanInputQnh) >= 1.0) {
 if (!(qnhEst.pressureStationHpa < qnhEst.pressureQnhHpa - 30.0)) {
   console.error(`FAIL estimate.qnh: station pressure ${qnhEst.pressureStationHpa} not well below QNH ${qnhEst.pressureQnhHpa}`);
   failures++;
+}
+
+// estimateWithParams: uses only active stations with a fresh observation,
+// nearest first, capped at estimateK -- the silent LFQI/EBCV/EBFN/LFOW,
+// despite being closer, are skipped even though they're in the 12-station list.
+const listSel = stations.selectWithParams(50.6292, 3.0573, 12, 100.0);
+const listObs = {
+  LFQQ: obsRow(14.2, 11.4, 5.6, 230.0, 1018.3, 10),
+  EBOS: obsRow(14.6, 11.8, 4.9, 220.0, 1018.6, 15),
+  LFAQ: obsRow(14.8, 11.9, 5.2, 225.0, 1018.5, 20),
+  LFAC: obsRow(13.9, 11.1, 4.5, 215.0, 1018.1, 25),
+  EHFS: obsRow(13.5, 10.8, 6.1, 240.0, 1017.9, 5),
+  EHSG: obsRow(13.6, 10.9, 5.8, 235.0, 1017.8, 30),
+};
+const withParamsEst = wasm.estimateWithParams(listSel, listObs, 35.0, NOW_MILLIS, 5, wasm.maxAgeMin());
+assertClose(withParamsEst.stationsUsed, 5, 'estimateWithParams.stationsUsed');
+const usedIcaos = withParamsEst.stations.filter((s) => s.used).map((s) => s.icao);
+assertClose(usedIcaos, ['LFQQ', 'EBOS', 'LFAQ', 'LFAC', 'EHFS'], 'estimateWithParams.used');
+for (const silent of ['LFQI', 'EBCV', 'EBFN', 'LFOW']) {
+  const s = withParamsEst.stations.find((s) => s.icao === silent);
+  if (s.used || s.active) {
+    console.error(`FAIL estimateWithParams.silent: ${silent} expected active=false used=false, got ${JSON.stringify(s)}`);
+    failures++;
+  }
 }
 
 // ---- parseNwsLatest / nwsStationId ----
