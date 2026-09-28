@@ -2,6 +2,10 @@
 name = "weather"
 version = "0.1.0"
 edition = "2021"
+description = "Nearest-station kNN weather estimate with physics corrections for elevation, dew point, pressure and wind"
+license = "MIT"
+repository = "https://github.com/idle-intelligence/weather-web"
+publish = false
 
 [dependencies]
 serde = { version = "1", features = ["derive"] }

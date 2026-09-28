@@ -2,6 +2,10 @@
 name = "weather-wasm"
 version = "0.1.0"
 edition = "2021"
+description = "wasm-bindgen bindings for the weather crate, used by the browser demo"
+license = "MIT"
+repository = "https://github.com/idle-intelligence/weather-web"
+publish = false
 
 [lib]
 crate-type = ["cdylib", "rlib"]
