@@ -38,6 +38,17 @@ fn age_minutes(obs_time_millis: Option<i64>, now_millis: i64) -> Option<f64> {
     obs_time_millis.map(|t| (now_millis - t) as f64 / 60000.0)
 }
 
+/// Observations older than `max_age_min` are excluded from the corrected
+/// average. Passing `MAX_AGE_MIN` reproduces `compute_corrections`'s cutoff.
+pub fn compute_corrections_with(
+    rows: &[NeighborRow],
+    target_elev_m: Option<f64>,
+    now_millis: i64,
+    max_age_min: f64,
+) -> Corrections {
+    compute_corrections_inner(rows, target_elev_m, now_millis, max_age_min)
+}
+
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TempPoint {
@@ -153,6 +164,15 @@ pub fn compute_corrections(
     target_elev_m: Option<f64>,
     now_millis: i64,
 ) -> Corrections {
+    compute_corrections_inner(rows, target_elev_m, now_millis, MAX_AGE_MIN)
+}
+
+fn compute_corrections_inner(
+    rows: &[NeighborRow],
+    target_elev_m: Option<f64>,
+    now_millis: i64,
+    max_age_min: f64,
+) -> Corrections {
     let with_age: Vec<(&NeighborRow, Option<f64>)> = rows
         .iter()
         .map(|s| {
@@ -173,7 +193,7 @@ pub fn compute_corrections(
                 elev_m: s.elev_m,
                 value: temp_c,
                 age: *age,
-                included: age.map(|a| a <= MAX_AGE_MIN).unwrap_or(false),
+                included: age.map(|a| a <= max_age_min).unwrap_or(false),
                 corrected_value: None,
             })
         })
@@ -281,7 +301,7 @@ pub fn compute_corrections(
                 distance: s.distance,
                 value: dewpoint_c,
                 age: *age,
-                included: age.map(|a| a <= MAX_AGE_MIN).unwrap_or(false),
+                included: age.map(|a| a <= max_age_min).unwrap_or(false),
                 e: vapor_pressure_hpa(dewpoint_c),
             })
         })
@@ -306,7 +326,7 @@ pub fn compute_corrections(
                 distance: s.distance,
                 value: pressure_hpa,
                 age: *age,
-                included: age.map(|a| a <= MAX_AGE_MIN).unwrap_or(false),
+                included: age.map(|a| a <= max_age_min).unwrap_or(false),
             })
         })
         .collect();
@@ -370,7 +390,7 @@ pub fn compute_corrections(
                 speed,
                 dir,
                 age: *age,
-                included: age.map(|a| a <= MAX_AGE_MIN).unwrap_or(false),
+                included: age.map(|a| a <= max_age_min).unwrap_or(false),
             })
         })
         .collect();

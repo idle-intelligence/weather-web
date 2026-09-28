@@ -5,12 +5,18 @@
 
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use std::path::Path;
 
 const EARTH_RADIUS_KM: f64 = 6371.0;
 
 /// Number of neighbours the trucs.ai page uses for its kNN estimate.
 pub const DEFAULT_K: usize = 5;
+
+/// Default number of nearest stations a caller lists (e.g. the weather-web
+/// repo demo), separate from DEFAULT_K, which the trucs.ai page's estimate
+/// keeps using.
+pub const DEFAULT_LIST_K: usize = 12;
 
 /// Maximum neighbour distance (km) the trucs.ai page uses for its kNN estimate.
 pub const MAX_RADIUS_KM: f64 = 100.0;
@@ -24,30 +30,57 @@ pub struct Station {
     pub elev_m: f64,
     pub name: String,
     pub country: String,
+    /// Whether this station counts toward an estimate. True for every row
+    /// in a plain 6-column list (stations.json); for an 8-column row
+    /// (stations_all.json: [..., reported, lastReportUtc]) this is that
+    /// row's "reported in the last 7 days" flag.
+    pub active: bool,
 }
 
-/// The stations.json row shape: [icao, lat, lon, elev_m, name, country].
-#[derive(Debug, Deserialize)]
-struct StationRow(String, f64, f64, f64, String, String);
-
-impl From<StationRow> for Station {
-    fn from(row: StationRow) -> Self {
-        Station {
-            icao: row.0,
-            lat: row.1,
-            lon: row.2,
-            elev_m: row.3,
-            name: row.4,
-            country: row.5,
-        }
+/// Parses one stations.json/stations_all.json row: a JSON array, either
+/// [icao, lat, lon, elev_m, name, country] (active is assumed true) or
+/// [icao, lat, lon, elev_m, name, country, reported, lastReportUtc]
+/// (active = reported; lastReportUtc is not kept -- selection and
+/// estimation only need the flag). Any list in this row shape works,
+/// including a caller's own list of any size.
+fn station_from_row(value: &Value) -> Result<Station> {
+    let arr = value
+        .as_array()
+        .context("station row is not a JSON array")?;
+    if arr.len() < 6 {
+        anyhow::bail!("station row has {} fields, need at least 6", arr.len());
     }
+    let field_str = |i: usize, name: &str| -> Result<String> {
+        arr[i]
+            .as_str()
+            .map(str::to_string)
+            .with_context(|| format!("station row field {i} ({name}) is not a string"))
+    };
+    let field_f64 = |i: usize, name: &str| -> Result<f64> {
+        arr[i]
+            .as_f64()
+            .with_context(|| format!("station row field {i} ({name}) is not a number"))
+    };
+    let active = arr.get(6).and_then(Value::as_bool).unwrap_or(true);
+    Ok(Station {
+        icao: field_str(0, "icao")?,
+        lat: field_f64(1, "lat")?,
+        lon: field_f64(2, "lon")?,
+        elev_m: field_f64(3, "elevM")?,
+        name: field_str(4, "name")?,
+        country: field_str(5, "country")?,
+        active,
+    })
 }
 
-/// Parses a stations.json body: a JSON array of [icao, lat, lon, elev_m, name, country] rows.
+/// Parses a stations.json/stations_all.json body: a JSON array of station
+/// rows (see `station_from_row`).
 pub fn parse_stations(text: &str) -> Result<Vec<Station>> {
-    let rows: Vec<StationRow> =
-        serde_json::from_str(text).context("parsing stations JSON")?;
-    Ok(rows.into_iter().map(Station::from).collect())
+    let rows: Vec<Value> = serde_json::from_str(text).context("parsing stations JSON")?;
+    rows.iter()
+        .enumerate()
+        .map(|(i, row)| station_from_row(row).with_context(|| format!("station row {i}")))
+        .collect()
 }
 
 /// Loads a stations.json file: a JSON array of [icao, lat, lon, elev_m, name, country] rows.

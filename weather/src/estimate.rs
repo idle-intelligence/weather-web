@@ -10,11 +10,32 @@
 //! when a corrected value is unavailable (same fallback as the page's
 //! `correctedValueFor`).
 
-use crate::corrections::{compute_corrections, NeighborRow, MAX_AGE_MIN};
+use crate::corrections::{compute_corrections_with, NeighborRow, MAX_AGE_MIN};
 use crate::observation::Observation;
 use crate::select::Selection;
+use crate::stations::DEFAULT_K;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+
+/// Parameters for `estimate_with`: how many of the selected stations to
+/// average over, and how old an observation may be to still count.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct EstimateParams {
+    pub estimate_k: usize,
+    pub max_age_min: f64,
+}
+
+impl Default for EstimateParams {
+    /// `estimate_k: 5`, `max_age_min: 90`: the trucs.ai page's own numbers,
+    /// so `estimate`'s hard-coded behaviour and `estimate_with`'s default
+    /// agree.
+    fn default() -> Self {
+        EstimateParams {
+            estimate_k: DEFAULT_K,
+            max_age_min: MAX_AGE_MIN,
+        }
+    }
+}
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "camelCase")]
@@ -34,6 +55,13 @@ pub struct StationEstimate {
     pub age_minutes: Option<f64>,
     pub fresh: bool,
     pub has_observation: bool,
+    /// The station's dataset "reported in the last 7 days" flag (always
+    /// true for a plain 6-column station list).
+    pub active: bool,
+    /// Whether this station's observation fed the average: `estimate`
+    /// (unparameterized) marks every selected station used; `estimate_with`
+    /// marks only the nearest `estimate_k` that are `active` and fresh.
+    pub used: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -85,6 +113,43 @@ pub fn estimate(
     target_elev_m: Option<f64>,
     now_millis: i64,
 ) -> Estimate {
+    // estimate_k: None means every selected station is used, regardless of
+    // its active flag: the trucs.ai page's own behaviour, unchanged.
+    estimate_inner(selection, observations, target_elev_m, now_millis, MAX_AGE_MIN, None)
+}
+
+/// Like `estimate`, but with a caller-chosen freshness cutoff and a cap on
+/// how many of the selected stations feed the average: only stations
+/// flagged `active` with an observation no older than `params.max_age_min`
+/// are used, nearest first, up to `params.estimate_k` of them. Every
+/// selected station -- active or not, fresh or not -- is still reported in
+/// `stations`/`fresh_count`/`stale_count`/`missing_count`; each row's `used`
+/// flag says which ones fed the average.
+pub fn estimate_with(
+    selection: &Selection,
+    observations: &HashMap<String, Observation>,
+    target_elev_m: Option<f64>,
+    now_millis: i64,
+    params: &EstimateParams,
+) -> Estimate {
+    estimate_inner(
+        selection,
+        observations,
+        target_elev_m,
+        now_millis,
+        params.max_age_min,
+        Some(params.estimate_k),
+    )
+}
+
+fn estimate_inner(
+    selection: &Selection,
+    observations: &HashMap<String, Observation>,
+    target_elev_m: Option<f64>,
+    now_millis: i64,
+    max_age_min: f64,
+    estimate_k: Option<usize>,
+) -> Estimate {
     if selection.stations.is_empty() {
         return empty_estimate(EstimateStatus::NoStationWithinRadius {
             nearest_id: selection.nearest.station.icao.clone(),
@@ -92,8 +157,31 @@ pub fn estimate(
         });
     }
 
-    let rows: Vec<NeighborRow> = selection
-        .stations
+    let is_fresh = |icao: &str| -> bool {
+        observations
+            .get(icao)
+            .and_then(|o| o.obs_time_millis)
+            .map(|t| (now_millis - t) as f64 / 60000.0 <= max_age_min)
+            .unwrap_or(false)
+    };
+
+    // Stations that feed the average, nearest first. `estimate` (estimate_k:
+    // None) uses every selected station, as before. `estimate_with`
+    // restricts this to stations flagged active with a fresh observation,
+    // capped at estimate_k.
+    let used: Vec<&crate::stations::Neighbor> = match estimate_k {
+        Some(k) => selection
+            .stations
+            .iter()
+            .filter(|n| n.station.active && is_fresh(&n.station.icao))
+            .take(k)
+            .collect(),
+        None => selection.stations.iter().collect(),
+    };
+    let used_icaos: std::collections::HashSet<&str> =
+        used.iter().map(|n| n.station.icao.as_str()).collect();
+
+    let rows: Vec<NeighborRow> = used
         .iter()
         .map(|n| NeighborRow {
             icao: n.station.icao.clone(),
@@ -103,7 +191,7 @@ pub fn estimate(
         })
         .collect();
 
-    let corr = compute_corrections(&rows, target_elev_m, now_millis);
+    let corr = compute_corrections_with(&rows, target_elev_m, now_millis, max_age_min);
 
     let stations: Vec<StationEstimate> = selection
         .stations
@@ -113,7 +201,7 @@ pub fn estimate(
             let age_minutes = obs
                 .and_then(|o| o.obs_time_millis)
                 .map(|t| (now_millis - t) as f64 / 60000.0);
-            let fresh = age_minutes.map(|a| a <= MAX_AGE_MIN).unwrap_or(false);
+            let fresh = age_minutes.map(|a| a <= max_age_min).unwrap_or(false);
             StationEstimate {
                 icao: n.station.icao.clone(),
                 name: n.station.name.clone(),
@@ -121,6 +209,8 @@ pub fn estimate(
                 age_minutes,
                 fresh,
                 has_observation: obs.is_some(),
+                active: n.station.active,
+                used: used_icaos.contains(n.station.icao.as_str()),
             }
         })
         .collect();
@@ -129,7 +219,12 @@ pub fn estimate(
     let missing_count = stations.iter().filter(|s| !s.has_observation).count();
     let stale_count = stations.len() - fresh_count - missing_count;
 
-    let status = if fresh_count == 0 {
+    // Whether the rows actually fed to compute_corrections include a fresh
+    // observation: for `estimate` this is every selected station (matching
+    // its old fresh_count check); for `estimate_with` `rows` is already
+    // filtered to fresh ones, so this is just "rows is non-empty".
+    let fresh_used_count = rows.iter().filter(|r| is_fresh(&r.icao)).count();
+    let status = if fresh_used_count == 0 {
         EstimateStatus::NoFreshObservation
     } else {
         EstimateStatus::Ok

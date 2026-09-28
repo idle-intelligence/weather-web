@@ -12,13 +12,13 @@ pub mod select;
 pub mod stations;
 pub mod time;
 
-pub use corrections::{compute_corrections, Corrections, NeighborRow, MAX_AGE_MIN};
-pub use estimate::{estimate, Estimate, EstimateStatus, StationEstimate};
+pub use corrections::{compute_corrections, compute_corrections_with, Corrections, NeighborRow, MAX_AGE_MIN};
+pub use estimate::{estimate, estimate_with, Estimate, EstimateParams, EstimateStatus, StationEstimate};
 pub use idw::{idw, idw_circular_deg, IdwResult};
 pub use nws::{nws_station_id, parse_nws_latest};
 pub use observation::{parse_iem_currents, Observation};
-pub use select::{select, Selection};
+pub use select::{select, select_with, SelectParams, Selection};
 pub use stations::{
     haversine_km, load_stations, nearest, nearest_within, parse_stations, Neighbor, Station,
-    DEFAULT_K, MAX_RADIUS_KM,
+    DEFAULT_K, DEFAULT_LIST_K, MAX_RADIUS_KM,
 };
