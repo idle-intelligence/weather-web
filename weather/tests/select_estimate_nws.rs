@@ -1,8 +1,7 @@
 //! Tests for select.rs, estimate.rs and nws.rs: the logic that moved out of
-//! the trucs.ai page's index.html/sources.js after bugs were found in it
-//! that tests should have caught (station selection, the 100 km radius, the
-//! removed farther-station fallback, the 90-minute freshness cutoff, and NWS
-//! unit parsing).
+//! the trucs.ai page's index.html/sources.js (station selection, the 100 km
+//! radius, the removed farther-station fallback, the 90-minute freshness
+//! cutoff, and NWS unit parsing).
 //!
 //! Station data: tests/fixtures/stations_subset.json, a small real subset of
 //! the full station list (published as the idle-intelligence/metar-stations
@@ -12,9 +11,8 @@
 //! EHFS and EHSG report; LFQI, EBCV, EBFN and LFOW are real IEM roster
 //! stations that never reported in the dataset's 7-day window and are
 //! carried here with `active: false`, closer to Lille than some of the
-//! reporting ones -- EBSZ and LFYG, the other two of TC's originally-named
-//! six silent Lille stations, are not IEM ASOS roster stations at all and so
-//! have no real row to add), a Paris cluster (LFPG and its nearest
+//! reporting ones -- EBSZ and LFYG are not IEM ASOS roster stations at all
+//! and so have no real row to add), a Paris cluster (LFPG and its nearest
 //! neighbours), an Alps cluster (Aosta/Sion/Annecy/Geneva/Chambery/Payerne,
 //! a sparser mountain ring), and the New York and Toronto city clusters.
 //! NWS fixtures: two real api.weather.gov /observations/latest responses,
