@@ -10,8 +10,8 @@ vector components, not scalar speed and direction). Observations older than
 90 minutes are excluded from the corrected average.
 
 This is a Rust reimplementation of a kNN weather estimator originally
-written in JavaScript for a browser demo. The crate is the source of truth
-for the computation now.
+written in JavaScript for a browser demo; the crate is now the source of
+truth for the computation.
 
 ## Prerequisites
 
@@ -167,7 +167,7 @@ correction helps but does not close this gap in mountainous terrain.
 
 ## Known limits
 
-Altitude handling has been tabled for now. Three ways forward, not started:
+Three possible improvements to the altitude handling, none implemented yet:
 
 - Clamp the fitted lapse rate to a physical range (for example -10 to +8
   K/km) instead of only falling back on an implausible fit, so the estimate
