@@ -140,7 +140,10 @@ list and of saved snapshots; it is not committed, and no test depends on it.
 
 `Stations` takes the JSON text of any list of rows `[id, lat, lon, elev_m, name, country]`, optionally followed by `reported` (true or false) and the last report time; rows without the flag count as reporting. Nothing in the format is specific to METAR. The tunables are parameters: how many stations to list (default 12), the radius (100 km), how many reporting stations the estimate uses (5) and the maximum observation age (90 minutes), through `select_with` / `estimate_with` in Rust and `selectWithParams` / `estimateWithParams` in JavaScript.
 
-Selection is a linear scan at about 290 ns per station on an M2 (release build): 2.1 ms for the 7,534-station list, 8.5 ms for a real 29,070-station list, so about 15 ms for 50,000 stations, once per query.
+Selection is a linear scan, about 290 ns per station in a release build;
+measure it with `cargo run --release --example bench_select -- <station list>`.
+That comes to about 2.2 ms for the published stations_all.json (7,534
+stations), once per query.
 
 ## Data sources
 
