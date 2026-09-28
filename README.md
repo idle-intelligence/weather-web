@@ -6,10 +6,12 @@ stations.
 [**Try the demo →**](https://idle-intelligence.github.io/weather-web/web/)
 
 The method comes from SenseAI's weather tools (2015), where the author was
-CTO; this crate is a from-scratch Rust implementation and is now the source
-of truth for the computation, also used by the [kNN weather](https://trucs.ai/knn-weather/)
-page and the [Browser weather](https://trucs.ai/blog/browser-weather) blog
-post on trucs.ai.
+CTO. This crate is its Rust implementation and the source of truth for the
+computation.
+
+The same code runs the [kNN weather](https://trucs.ai/knn-weather/) map on
+trucs.ai, and the [Browser weather](https://trucs.ai/blog/browser-weather)
+blog post explains how it works, step by step, with live data.
 
 The k nearest stations within a 100 km radius are averaged by inverse
 distance weighting, with corrections for elevation (temperature reduced to
@@ -194,9 +196,9 @@ correction helps but does not close this gap in mountainous terrain.
 
 ## Known limits
 
-There are a few ways this approach could be improved:
+There are a few ways we could improve our approach here:
 
-1. making sure the fit can't run away, by limiting the correction rate to
+1. making sure the fit can't run away, by limiting our correction rate to
    values that have a physical sense.
 2. fitting those rates on more stations.
 3. Also weight the neighbours by height difference as well as distance.
