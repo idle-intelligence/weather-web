@@ -20,7 +20,7 @@ fn main() -> Result<()> {
         "validate" => run_validate(args),
         _ => {
             eprintln!("usage: weather-cli <estimate|snapshot|validate> [options]");
-            eprintln!("  estimate --lat LAT --lon LON --stations PATH [--k N]");
+            eprintln!("  estimate --lat LAT --lon LON --stations PATH [--k N] [--elev METERS]");
             eprintln!("  snapshot --stations PATH --out FILE");
             eprintln!("  validate --snapshot FILE --stations PATH --out CSV");
             std::process::exit(2);
