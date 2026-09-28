@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>weather-web - idle intelligence</title>
+    <link rel="icon" href="favicon.ico">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #fdfdfd;
+            --text: #1a1a1a;
+            --muted: #555;
+            --faint: #999;
+            --border: #ddd;
+            --green: #2d7d46;
+            --yellow: #b58900;
+            --red: #c0392b;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'IBM Plex Sans', -apple-system, sans-serif;
+            max-width: 640px;
+            margin: 0 auto;
+            padding: 48px 24px 96px;
+            color: var(--text);
+            background: var(--bg);
+            line-height: 1.5;
+            font-size: 15px;
+        }
+        a { color: var(--text); }
+        a:hover { color: var(--muted); }
+
+        header { margin-bottom: 48px; }
+        .org {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 13px;
+            color: var(--muted);
+            letter-spacing: 0.02em;
+            margin-bottom: 2px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .org img {
+            width: 16px;
+            height: 16px;
+            border-radius: 2px;
+        }
+        h1 {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        .tagline {
+            color: var(--muted);
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        .tagline a { text-decoration: underline; color: var(--muted); }
+        .tagline a:hover { color: var(--text); }
+        .repo {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 13px;
+            margin-top: 4px;
+        }
+        .repo a { color: var(--faint); text-decoration: none; }
+        .repo a:hover { color: var(--muted); }
+
+        section {
+            border-top: 1px solid var(--border);
+            padding: 24px 0;
+        }
+        section h2 {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 12px;
+            font-weight: 500;
+            letter-spacing: 0.04em;
+            color: var(--faint);
+            margin-bottom: 12px;
+        }
+        section h2 .sub {
+            font-weight: 400;
+        }
+
+        .status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+        }
+        .status-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--faint);
+            flex-shrink: 0;
+        }
+        .status-dot.loading { background: var(--yellow); }
+        .status-dot.ready { background: var(--green); }
+        .status-dot.error { background: var(--red); }
+
+        .voice-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+        }
+        .voice-grid + .voice-grid { margin-top: 8px; }
+        .voice-btn {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 13px;
+            font-weight: 500;
+            padding: 6px 0;
+            cursor: pointer;
+            border: 1px solid var(--border);
+            background: transparent;
+            color: var(--text);
+            border-radius: 0;
+            text-align: center;
+            transition: border-color 0.15s, background 0.15s, color 0.15s;
+        }
+        .voice-btn:hover:not(:disabled) {
+            border-color: var(--text);
+        }
+        .voice-btn.active {
+            background: var(--text);
+            color: var(--bg);
+            border-color: var(--text);
+        }
+
+        .coords-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-top: 12px;
+            flex-wrap: wrap;
+        }
+        input[type="text"] {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 14px;
+            padding: 8px 10px;
+            border: 1px solid var(--border);
+            background: transparent;
+            color: var(--text);
+            width: 14em;
+        }
+        input[type="text"]:focus {
+            outline: none;
+            border-color: var(--text);
+        }
+        button {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 13px;
+            font-weight: 500;
+            padding: 8px 16px;
+            cursor: pointer;
+            border: 1px solid var(--border);
+            background: transparent;
+            color: var(--text);
+            border-radius: 0;
+            transition: border-color 0.15s;
+        }
+        button:hover:not(:disabled) {
+            border-color: var(--text);
+        }
+        button:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+        button.primary {
+            background: var(--text);
+            color: var(--bg);
+            border-color: var(--text);
+        }
+        button.primary:hover:not(:disabled) {
+            background: var(--muted);
+            border-color: var(--muted);
+        }
+
+        .station-list { margin-top: 16px; }
+        .station-row {
+            display: flex;
+            flex-wrap: wrap;
+            column-gap: 7px;
+            row-gap: 2px;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 12px;
+            padding: 6px 0;
+            border-top: 1px solid var(--border);
+        }
+        .station-row:first-child { border-top: none; }
+        .station-row > span {
+            display: inline-block;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .station-row .icao { width: 5ch; color: var(--text); font-weight: 500; }
+        .station-row .name { width: 12ch; color: var(--muted); }
+        .station-row .distance { width: 7ch; text-align: right; }
+        .station-row .reported { width: 3ch; text-align: right; }
+        .station-row .age { width: 11ch; text-align: right; }
+        .station-row .temp { width: 7ch; text-align: right; }
+        .station-row .dew { width: 7ch; text-align: right; }
+        .station-row .wind { width: 12ch; text-align: right; }
+        .station-row .pressure { width: 8ch; text-align: right; }
+        .station-row.station-head, .station-row.station-head .icao { color: var(--faint); font-weight: 400; border-top: none; }
+        .station-row.stale { color: var(--faint); }
+        .station-row.stale .icao { color: var(--faint); }
+        .station-row .linebreak { display: none; }
+        @media (max-width: 480px) {
+            .station-row .linebreak { display: block; flex-basis: 100%; height: 0; }
+            .station-row .name { width: 17ch; }
+        }
+
+        .result-line { margin: 10px 0; }
+        .result-label { display: inline-block; width: 8em; color: var(--muted); font-size: 13px; }
+        .result-value {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .info {
+            font-size: 13px;
+            color: var(--faint);
+            margin-top: 12px;
+            line-height: 1.6;
+        }
+        .info a { text-decoration: underline; color: var(--faint); }
+        .info a:hover { color: var(--muted); }
+
+        footer {
+            border-top: 1px solid var(--border);
+            padding-top: 24px;
+            margin-top: 24px;
+        }
+        footer a {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 13px;
+            color: var(--faint);
+            text-decoration: none;
+        }
+        footer a:hover { color: var(--muted); }
+        footer .credit {
+            font-size: 13px;
+            color: var(--faint);
+            line-height: 1.6;
+            margin-top: 16px;
+        }
+        footer .credit + .credit { margin-top: 8px; }
+        footer .credit a { text-decoration: underline; color: var(--faint); }
+        footer .credit a:hover { color: var(--muted); }
+    </style>
+</head>
+<body>
+    <header>
+        <p class="org"><img src="apple-touch-icon.png" alt="II">idle intelligence</p>
+        <h1>weather-web</h1>
+        <p class="tagline">
+            A weather estimate for any point on Earth, from the nearest
+            live METAR stations, running in your browser via WebAssembly.
+        </p>
+        <p class="repo">
+            <a href="https://github.com/idle-intelligence/weather-web">github.com/idle-intelligence/weather-web</a>
+        </p>
+    </header>
+
+    <section>
+        <h2>location <span class="sub">· pick a city or enter coordinates</span></h2>
+        <div class="voice-grid" id="cityGridFr"></div>
+        <div class="voice-grid" id="cityGridUs"></div>
+        <div class="coords-row">
+            <input type="text" id="coordsInput" placeholder="lat, lon" aria-label="latitude, longitude">
+            <button id="fetchBtn" class="primary" disabled>Fetch</button>
+        </div>
+    </section>
+
+    <section>
+        <h2>status</h2>
+        <div class="status">
+            <span class="status-dot" id="statusDot"></span>
+            <span id="statusText">loading station list...</span>
+        </div>
+    </section>
+
+    <section id="stationsSection" style="display:none">
+        <h2>stations <span class="sub">· all stations within 100 km</span></h2>
+        <div class="station-list" id="stationList"></div>
+        <p class="info" id="staleNote" style="display:none">7d: reported in the last 7 days. Greyed stations either haven't reported in the last 7 days or reported more than 90 minutes ago; both are left out of the estimate.</p>
+    </section>
+
+    <section id="estimateSection" style="display:none">
+        <h2>estimate</h2>
+        <button id="computeBtn" class="primary">Compute</button>
+        <div id="resultPanel" style="margin-top:16px"></div>
+    </section>
+
+    <section>
+        <h2>about</h2>
+        <p class="info">
+            The estimate is a distance-weighted average of the nearest
+            reporting stations within 100 km, corrected for the target
+            point's elevation, with dew point averaged as vapour pressure,
+            wind averaged as vector components, and pressure kept at sea
+            level like the stations report it. Stations within range that
+            haven't reported in the last 7 days are still listed, for
+            reference, but never used.<br>
+            Everything runs in your browser: station selection, weighting
+            and corrections are the <code>weather</code> Rust library
+            compiled to WebAssembly; only fetching the station list and the
+            live observations happens in JavaScript.
+        </p>
+        <p class="info">
+            <a href="https://trucs.ai/knn-weather/">trucs.ai/knn-weather</a> - the same estimate on a map.<br>
+            <a href="https://trucs.ai/blog/browser-weather">trucs.ai/blog/browser-weather</a> - how it works.
+        </p>
+    </section>
+
+    <footer>
+        <a href="https://idleintelligence.org">idleintelligence.org</a>
+        <a href="https://trucs.ai/knn-weather/">trucs.ai/knn-weather</a>
+        <p class="credit">
+            Source: <a href="https://github.com/idle-intelligence/weather-web">github.com/idle-intelligence/weather-web</a> (MIT).<br>
+            Rust library compiled to WebAssembly with wasm-bindgen; no server.
+        </p>
+        <p class="credit">
+            Observations: <a href="https://mesonet.agron.iastate.edu/">Iowa Environmental Mesonet</a>,
+            <a href="https://www.weather.gov/documentation/services-web-api">api.weather.gov</a>.
+            Elevation: <a href="https://open-meteo.com/">Open-Meteo</a>.<br>
+            Stations: <a href="https://huggingface.co/datasets/idle-intelligence/metar-stations">idle-intelligence/metar-stations</a>.
+        </p>
+    </footer>
+
+    <script type="module">
+        import {
+            loadStations, fetchObservations, fetchElevation, estimateWithParams,
+        } from './weather-client.js';
+
+        // All tunables for station selection and the estimate, in one place.
+        const CONFIG = {
+            STATION_LIST_K: null, // null: list every station within RADIUS_KM
+            RADIUS_KM: 100,       // how far a station may be to count at all
+            ESTIMATE_K: 5,        // how many of the listed stations to average over
+            MAX_AGE_MIN: 90,      // how old an observation may be to still count
+        };
+
+        const statusDot = document.getElementById('statusDot');
+        const statusText = document.getElementById('statusText');
+        const cityGridFr = document.getElementById('cityGridFr');
+        const cityGridUs = document.getElementById('cityGridUs');
+        const coordsInput = document.getElementById('coordsInput');
+        const fetchBtn = document.getElementById('fetchBtn');
+        const stationsSection = document.getElementById('stationsSection');
+        const stationList = document.getElementById('stationList');
+        const staleNote = document.getElementById('staleNote');
+        const estimateSection = document.getElementById('estimateSection');
+        const computeBtn = document.getElementById('computeBtn');
+        const resultPanel = document.getElementById('resultPanel');
+
+        const CITIES_FR = [
+            { name: 'Paris', lat: 48.8566, lon: 2.3522 },
+            { name: 'Lyon', lat: 45.7640, lon: 4.8357 },
+            { name: 'Marseille', lat: 43.2965, lon: 5.3698 },
+            { name: 'Bordeaux', lat: 44.8378, lon: -0.5792 },
+            { name: 'Lille', lat: 50.6292, lon: 3.0573 },
+        ];
+        const CITIES_US = [
+            { name: 'New York', lat: 40.7128, lon: -74.0060 },
+            { name: 'San Francisco', lat: 37.7749, lon: -122.4194 },
+            { name: 'Los Angeles', lat: 34.0522, lon: -118.2437 },
+            { name: 'Chicago', lat: 41.8781, lon: -87.6298 },
+            { name: 'Montréal', lat: 45.5019, lon: -73.5674 },
+        ];
+
+        const useLocal = new URLSearchParams(location.search).get('local') === '1';
+
+        function setStatus(text, state) {
+            statusText.textContent = text;
+            statusDot.className = 'status-dot' + (state ? ` ${state}` : '');
+        }
+
+        function renderCityButtons(container, cities) {
+            for (const c of cities) {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'voice-btn';
+                btn.textContent = c.name;
+                btn.dataset.name = c.name;
+                btn.addEventListener('click', () => setLocation(c.lat, c.lon, c.name));
+                container.appendChild(btn);
+            }
+        }
+
+        function markActiveCity(label) {
+            document.querySelectorAll('#cityGridFr .voice-btn, #cityGridUs .voice-btn').forEach((btn) => {
+                btn.classList.toggle('active', btn.dataset.name === label);
+            });
+        }
+
+        let currentLocation = null; // { lat, lon }
+
+        function setLocation(lat, lon, label) {
+            currentLocation = { lat, lon };
+            coordsInput.value = `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
+            markActiveCity(label ?? null);
+            fetchBtn.disabled = !stations;
+            stationsSection.style.display = 'none';
+            estimateSection.style.display = 'none';
+            if (stations) setStatus(`location set, press Fetch`);
+        }
+
+        function parseCoords(text) {
+            const m = text.trim().match(/^(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)$/);
+            if (!m) return null;
+            const lat = parseFloat(m[1]);
+            const lon = parseFloat(m[2]);
+            return Number.isFinite(lat) && Number.isFinite(lon) ? { lat, lon } : null;
+        }
+
+        coordsInput.addEventListener('change', () => {
+            const parsed = parseCoords(coordsInput.value);
+            if (!parsed) {
+                setStatus('enter coordinates as "lat, lon"', 'error');
+                return;
+            }
+            setLocation(parsed.lat, parsed.lon, null);
+        });
+
+        renderCityButtons(cityGridFr, CITIES_FR);
+        renderCityButtons(cityGridUs, CITIES_US);
+
+        // ── Fetch: Stations.select() + live observations ──
+
+        let stations = null;
+        let currentSelection = null;
+        let currentObservations = null;
+        let lastElevM = null;
+
+        function fmtDistance(km) {
+            return `${km.toFixed(1)} km`;
+        }
+
+        // Station names come from the data in mixed ALL CAPS and Title
+        // Case ("SAGUACHE MUNI" vs "Big Horn County"); normalize for
+        // display only, not in the data itself.
+        function titleCase(s) {
+            return s.toLowerCase().replace(/\b\w/g, (m) => m.toUpperCase());
+        }
+
+        function fmtAge(minutes) {
+            if (minutes == null) return 'no observation';
+            return `${Math.round(minutes)} min ago`;
+        }
+
+        function fmtTemp(c) {
+            return c != null ? `${c.toFixed(1)} °C` : 'n/a';
+        }
+
+        function fmtWind(ms, dir) {
+            if (ms == null) return 'n/a';
+            return dir != null ? `${ms.toFixed(1)} m/s ${dir.toFixed(0)}°` : `${ms.toFixed(1)} m/s`;
+        }
+
+        function fmtPressure(hpa) {
+            return hpa != null ? `${Math.round(hpa)} hPa` : 'n/a';
+        }
+
+        // Station-list cell formatters: every column always prints something,
+        // "--" for a missing value, so no column ever shifts because a
+        // neighbouring one came up empty.
+        function cellAge(minutes) {
+            return minutes != null ? `${Math.round(minutes)} min ago` : '--';
+        }
+
+        function cellTemp(c) {
+            return c != null ? `${c.toFixed(1)} °C` : '--';
+        }
+
+        function cellWind(ms, dir) {
+            const speed = ms != null ? `${ms.toFixed(1)} m/s` : '--';
+            const heading = dir != null ? `${dir.toFixed(0)}°` : '--';
+            return `${speed} ${heading}`;
+        }
+
+        function cellPressure(hpa) {
+            return hpa != null ? `${Math.round(hpa)} hPa` : '--';
+        }
+
+        function renderStationList(neighbors, observations, maxAge) {
+            stationList.innerHTML = `
+                <div class="station-row station-head">
+                    <span class="icao">id</span>
+                    <span class="name">station</span>
+                    <span class="distance">dist</span>
+                    <span class="reported">7d</span>
+                    <span class="age">report</span>
+                    <span class="linebreak"></span>
+                    <span class="temp">temp</span>
+                    <span class="dew">dew pt</span>
+                    <span class="wind">wind</span>
+                    <span class="pressure">pres</span>
+                </div>`;
+            let anyStale = false;
+            for (const n of neighbors) {
+                const obs = observations[n.station.icao] ?? null;
+                const ageMinutes = obs?.obsTimeMillis != null ? (Date.now() - obs.obsTimeMillis) / 60000 : null;
+                const isFresh = obs != null && ageMinutes != null && ageMinutes <= maxAge;
+                if (!n.station.active || !isFresh) anyStale = true;
+                const row = document.createElement('div');
+                row.className = (n.station.active && isFresh) ? 'station-row' : 'station-row stale';
+                row.innerHTML = `
+                    <span class="icao">${n.station.icao}</span>
+                    <span class="name" title="${titleCase(n.station.name)}">${titleCase(n.station.name)}</span>
+                    <span class="distance">${fmtDistance(n.distance)}</span>
+                    <span class="reported">${n.station.active ? 'yes' : 'no'}</span>
+                    <span class="age">${cellAge(ageMinutes)}</span>
+                    <span class="linebreak"></span>
+                    <span class="temp">${cellTemp(obs?.tempC)}</span>
+                    <span class="dew">${cellTemp(obs?.dewpointC)}</span>
+                    <span class="wind">${cellWind(obs?.windMs, obs?.windDirDeg)}</span>
+                    <span class="pressure">${cellPressure(obs?.pressureHpa)}</span>
+                `;
+                stationList.appendChild(row);
+            }
+            staleNote.style.display = anyStale ? '' : 'none';
+        }
+
+        async function doFetch() {
+            if (!currentLocation || !stations) return;
+            fetchBtn.disabled = true;
+            estimateSection.style.display = 'none';
+            setStatus('finding nearest stations...', 'loading');
+
+            const selection = stations.selectWithParams(
+                currentLocation.lat, currentLocation.lon, CONFIG.STATION_LIST_K, CONFIG.RADIUS_KM,
+            );
+            currentSelection = selection;
+
+            if (!selection || selection.stations.length === 0) {
+                const nearest = selection?.nearest;
+                setStatus(
+                    nearest
+                        ? `no station within ${CONFIG.RADIUS_KM} km - nearest is ${nearest.station.icao}, ${fmtDistance(nearest.distance)} away`
+                        : 'no stations loaded',
+                    'error',
+                );
+                stationsSection.style.display = 'none';
+                fetchBtn.disabled = false;
+                return;
+            }
+
+            setStatus('fetching observations...', 'loading');
+            let observations = {};
+            try {
+                const reporting = selection.stations.filter((n) => n.station.active);
+                observations = await fetchObservations(reporting);
+            } catch (err) {
+                setStatus(`observation fetch failed: ${err.message}`, 'error');
+                fetchBtn.disabled = false;
+                return;
+            }
+            currentObservations = observations;
+
+            renderStationList(selection.stations, observations, CONFIG.MAX_AGE_MIN);
+            stationsSection.style.display = '';
+            estimateSection.style.display = '';
+            resultPanel.innerHTML = '';
+            setStatus(`${selection.stations.length} stations fetched, press Compute`, 'ready');
+            fetchBtn.disabled = false;
+        }
+
+        fetchBtn.addEventListener('click', doFetch);
+
+        // ── Compute: weather::estimate::estimate(), rendered as-is ──
+
+        function renderResult(est) {
+            if (est.status.kind === 'noStationWithinRadius') {
+                resultPanel.innerHTML = `<p class="info">no station within ${CONFIG.RADIUS_KM} km - nearest is ${est.status.nearestId}, ${fmtDistance(est.status.nearestKm)} away</p>`;
+                return;
+            }
+            if (est.status.kind === 'noFreshObservation') {
+                resultPanel.innerHTML = `<p class="info">no fresh observation among the nearest stations</p>`;
+                return;
+            }
+            const lines = [
+                { label: 'temperature', value: fmtTemp(est.temperatureC) },
+                { label: 'dew point', value: fmtTemp(est.dewpointC) },
+                { label: 'wind', value: fmtWind(est.windSpeedMs, est.windDirDeg) },
+                { label: 'pressure', value: fmtPressure(est.pressureQnhHpa) },
+            ];
+            resultPanel.innerHTML = lines.map((l) => `
+                <div class="result-line">
+                    <span class="result-label">${l.label}</span>
+                    <span class="result-value">${l.value}</span>
+                </div>
+            `).join('');
+        }
+
+        async function doCompute() {
+            if (!currentSelection || !currentObservations) return;
+            computeBtn.disabled = true;
+            setStatus('fetching elevation...', 'loading');
+            let elevM;
+            try {
+                elevM = await fetchElevation(currentLocation.lat, currentLocation.lon);
+            } catch (err) {
+                console.log(`elevation fetch failed: ${err.message}`);
+            }
+            lastElevM = elevM ?? null;
+            setStatus('computing estimate...', 'loading');
+            const est = estimateWithParams(
+                currentSelection, currentObservations, elevM ?? null, Date.now(),
+                CONFIG.ESTIMATE_K, CONFIG.MAX_AGE_MIN,
+            );
+            renderResult(est);
+            setStatus('estimate ready', 'ready');
+            computeBtn.disabled = false;
+        }
+
+        computeBtn.addEventListener('click', doCompute);
+
+        // ── Init: load the station list ──
+
+        loadStations(useLocal)
+            .then((s) => {
+                stations = s;
+                setStatus(`${stations.len} stations loaded, choose a location`, 'ready');
+                if (currentLocation) fetchBtn.disabled = false;
+            })
+            .catch((err) => {
+                setStatus(`failed to load station list: ${err.message}`, 'error');
+            });
+
+        // Exposed for headless verification.
+        window.__app = {
+            setLocation, doFetch, doCompute,
+            get currentSelection() { return currentSelection; },
+            get currentObservations() { return currentObservations; },
+            get lastElevM() { return lastElevM; },
+        };
+    </script>
+</body>
+</html>

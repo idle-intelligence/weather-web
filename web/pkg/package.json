@@ -1,0 +1,21 @@
+{
+  "name": "weather-wasm",
+  "type": "module",
+  "description": "wasm-bindgen bindings for the weather crate, used by the browser demo",
+  "version": "0.1.0",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/idle-intelligence/weather-web"
+  },
+  "files": [
+    "weather_wasm_bg.wasm",
+    "weather_wasm.js",
+    "weather_wasm.d.ts"
+  ],
+  "main": "weather_wasm.js",
+  "types": "weather_wasm.d.ts",
+  "sideEffects": [
+    "./snippets/*"
+  ]
+}
