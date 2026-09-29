@@ -6,9 +6,10 @@
 // station list and live observations, and calling the wasm exports with the
 // parsed results.
 //
-// Bump the ?v= tag below whenever weather-wasm/pkg is rebuilt, in the same
-// commit (import specifiers must be a static string literal, not a
-// template expression).
+// The ?v= tag below is set at deploy time by .github/workflows/pages.yml,
+// which rewrites it to the wasm build's content hash in the published copy.
+// The committed value here is only used for local runs (import specifiers
+// must be a static string literal, not a template expression).
 import init, { Stations, estimate, estimateWithParams, parseIemCurrents, parseNwsLatest, nwsStationId, maxAgeMin } from './pkg/weather_wasm.js?v=9f05f31';
 
 // stations_all.json carries every roster station, reporting or not (see
