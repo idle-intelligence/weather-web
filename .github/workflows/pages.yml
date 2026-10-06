@@ -25,14 +25,22 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@1.99.0
         with:
           targets: wasm32-unknown-unknown
+          components: clippy
 
       - uses: Swatinem/rust-cache@v2
 
       - name: Install wasm-pack
         run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+
+      - name: Install wasm-bindgen-cli (version pinned to Cargo.lock's wasm-bindgen)
+        run: |
+          set -euo pipefail
+          VER="$(grep -A1 '^name = "wasm-bindgen"$' Cargo.lock | grep '^version' | head -1 | cut -d'"' -f2)"
+          echo "wasm-bindgen-cli $VER"
+          cargo install wasm-bindgen-cli --version "$VER" --locked
 
       - name: Test
         run: cargo test --workspace
@@ -40,41 +48,8 @@ jobs:
       - name: Clippy
         run: cargo clippy --workspace --all-targets -- -D warnings
 
-      - name: Build weather-wasm
-        run: wasm-pack build weather-wasm --target web --release
-
-      - name: Assemble site
-        run: |
-          set -euo pipefail
-          rm -rf _site
-          mkdir -p _site
-          cp -R web _site/web
-          rm -rf _site/web/pkg
-          mkdir -p _site/web/pkg
-          cp weather-wasm/pkg/weather_wasm.js weather-wasm/pkg/weather_wasm_bg.wasm _site/web/pkg/
-          if [ -f weather-wasm/pkg/package.json ]; then
-            cp weather-wasm/pkg/package.json _site/web/pkg/
-          fi
-
-      - name: Tag and rewrite ?v= build tag
-        run: |
-          set -euo pipefail
-          TAG="$(sha256sum weather-wasm/pkg/weather_wasm_bg.wasm | cut -c1-7)"
-          echo "build tag: $TAG"
-          grep -rl '?v=' _site/web | xargs sed -i "s/?v=[0-9a-fA-F]\{7\}/?v=$TAG/g"
-
-          COUNT="$(grep -rEo '\?v=[0-9a-fA-F]+' _site/web | wc -l)"
-          if [ "$COUNT" -eq 0 ]; then
-            echo "error: no ?v= build-tag URLs found in the assembled site" >&2
-            exit 1
-          fi
-
-          BAD="$(grep -rEo '\?v=[0-9a-fA-F]+' _site/web | grep -v ":?v=$TAG\$" || true)"
-          if [ -n "$BAD" ]; then
-            echo "error: found ?v= URLs not rewritten to $TAG:" >&2
-            echo "$BAD" >&2
-            exit 1
-          fi
+      - name: Build and assemble the site
+        run: ENGINE_BUILD="${{ github.sha }}" scripts/build.sh
 
       - name: Check built wasm has no local build paths
         run: |
