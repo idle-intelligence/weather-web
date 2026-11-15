@@ -143,7 +143,7 @@ https://huggingface.co/datasets/idle-intelligence/metar-stations
 
 That dataset's roster comes from every Iowa Environmental Mesonet (IEM)
 ASOS/AWOS network, one network per country or per US state/Canadian
-province: 7,534 stations in all, each flagged for whether it reported at
+province: about 7,500 stations, each flagged for whether it reported at
 least once in the trailing 7-day window used to build the file. IEM's
 elevation values are used as given, except for 17 coastal and offshore
 stations (oil platforms, islands, lighthouses) where IEM lists a wrong
